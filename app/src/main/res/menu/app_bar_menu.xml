@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu  xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/picture_add"
+        android:title="사진 추가"
+        app:showAsAction="never" />
+    <item android:id="@+id/darkmode_action"
+        android:title="야간 모드"
+        app:showAsAction="never" />
+</menu>
