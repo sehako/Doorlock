@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/add_camera"
+        android:title="카메라 촬영" />
+    <item
+        android:title="갤러리 추가"
+        android:id="@+id/add_gallery"
+        />
+</menu>
