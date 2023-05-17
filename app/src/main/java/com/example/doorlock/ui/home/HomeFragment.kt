@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,17 +23,18 @@ import com.example.doorlock.Users
 
 class HomeFragment : Fragment() {
 
-    
+    private val REQUEST_CODE = 10
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
     }
 
     private var userList = arrayListOf<Users>(
-        Users("소순성", "2023/05/06", ""),
-        Users("이종석", "2023/05/06", ""),
-        Users("안진원", "2023/05/06", ""),
-        Users("오세학", "2023/05/05", "")
+        Users("소순성", ""),
+        Users("이종석", ""),
+        Users("안진원", ""),
+        Users("오세학", "")
     )
 
 
@@ -41,7 +43,6 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         val view = inflater.inflate(R.layout.fragment_home, container, false)
         val users: RecyclerView = view.findViewById(R.id.rv_profile)
 
@@ -65,10 +66,20 @@ class HomeFragment : Fragment() {
                 true
             }
             R.id.add_gallery -> {
+                val intent = Intent(Intent.ACTION_GET_CONTENT)
+                intent.setData(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                intent.setType("image/*")
+                intent.setAction(Intent.ACTION_GET_CONTENT)
+
+                startActivityForResult(intent, REQUEST_CODE)
 
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
     }
 }

@@ -24,7 +24,6 @@ class UserListAdapter(val context: Context, val userList: ArrayList<Users>) : Re
     }
     inner class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val name = itemView.findViewById<TextView>(R.id.tv_name)
-        val date = itemView.findViewById<TextView>(R.id.tv_date)
         val img = itemView.findViewById<ImageView>(R.id.img_photo)
 
         fun bind (userList: Users, context: Context) {
@@ -35,7 +34,6 @@ class UserListAdapter(val context: Context, val userList: ArrayList<Users>) : Re
                 img?.setImageResource(R.mipmap.ic_launcher)
             }
             name.text = userList.name
-            date.text = userList.date
         }
     }
 }
