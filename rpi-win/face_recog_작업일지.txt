@@ -1,0 +1,65 @@
+변경사항
+
+line 16 : camera.VideoCamera() -> camera.PiCamera()
+line 8 : from picamera import PiCamera 추가
+line 40 : del self.camera -> self.camera.close()
+line 44 : frame = self.camera.get_frame() -> frame = self.camera.capture()
+등등 ...
+
+
+<<<
+mmal: mmal_vc_port_enable: failed to enable port vc.null_sink:in:0(OPQV): ENOSPC
+mmal: mmal_port_enable: failed to enable connected port (vc.null_sink:in:0(OPQV))0x7116d10 (ENOSPC)
+mmal: mmal_connection_enable: output port couldn't be enabled
+Traceback (most recent call last):
+  File "/home/doorlock/face_recog.py", line 105, in <module>
+    face_recog = FaceRecog()
+  File "/home/doorlock/face_recog.py", line 16, in __init__
+    self.camera = picamera.PiCamera()
+.
+.
+picamera.exc.PiCameraMMALError: Failed to enable connection: Out of resources
+>>>
+# 구글링하면 stack overflow든 어디든 camera.close()로 닫아야한다는 
+  해결책이 많이 나오는데 어느 지점 어느 코드 뒤에서 닫아야 할 지를 잘 모르겠음
+    (camera.stop_preview() 뒤에 camera.close() 하면 된대 -> stop_preview 어딨노)
+  원랜 __del__에 close 말고 del self.camera 로 되어있었는데 내가 self.camera.close()로 변경했음.
+  (https://eve24/tistory.com/13)
+  (https://stackoverflow.com/questions/67469481/faild-to-enable-port-vc-null-sinkin0opqv-enospc)
+  (https://github.com/waveform80/picamera/issues/488)
+
+# gpu메모리 부족일 수도? 
+  기본128mb->256mb로 바꿔서 다시 돌려봤더니 똑같이 에러남. 이 문제는 아닌 듯 (/boot/config.txt 에서 gpu_mem값)
+
+# python3 face_recog.py 에러는 위처럼 나는데 혹시나해서 
+  sudo python3 face_recog.py 로 해봤는데 
+  import face_recognition 되어있지만 
+  No module named 'face_recognition' 모듈이 없다고만 뜸. 설치는 되어있었고 uninstall 하고 다시 설치해봤는데도 똑같음.
+  
+
+# 여러가지 해봤지만 아직 안해 본 방법 하나 -> 가상환경에서 opencv랑 face_recognition 등 다시 설치하고 가상환경에서 돌려보기...
+  이렇게 했는데도 안되면 face_recog.py 코드 한줄한줄 공부해서 맞춰보는 수 밖에 없는 듯?
+========================================================================================
+
+119 ~ 120 라인에서 (while 루프 벗어나는 지점)
+face_recog.camera.close()
+cv2.destroyAllWindows()
+추가했음 -> mmal 오류는 해결 완료
+
+<<< 나머지 에러 >>>
+doorlock@raspberrypi:~ $ python3 face_recog.py
+
+Traceback (most recent call last):
+  File "/home/doorlock/face_recog.py", line 104, in <module>
+    face_recog = FaceRecog()
+  File "/home/doorlock/face_recog.py", line 17, in __init__
+    self.camera = picamera.PiCamera()
+NameError: name 'picamera' is not defined
+Exception ignored in: <function FaceRecog.__del__ at 0x69af8190>
+Traceback (most recent call last):
+  File "/home/doorlock/face_recog.py", line 41, in __del__
+    self.camera.close()
+AttributeError: 'FaceRecog' object has no attribute 'camera'
+
+하 .. ㅅㅂ 
+
