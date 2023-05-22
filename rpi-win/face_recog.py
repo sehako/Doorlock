@@ -1,12 +1,13 @@
 # face_recog.py
 
-import face_recognition
 import cv2
 import camera
 import os
 import numpy as np
 import datetime
-import picamera
+from picamera import PiCamera
+import face_recognition
+
 
 class FaceRecog():
     def __init__(self):
@@ -41,7 +42,7 @@ class FaceRecog():
 
     def get_frame(self):
         # Grab a single frame of video
-        frame = self.camera.get_frame()
+        frame = self.camera.capture()
 
         # Resize frame of video to 1/4 size for faster face recognition processing
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -114,6 +115,9 @@ if __name__ == '__main__':
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
+            
+        face_recog.camera.close()
+        cv2.destroyAllWindows()
         
         # 5초 후에 카메라 종료
         '''
@@ -123,7 +127,7 @@ if __name__ == '__main__':
         '''
 
     # 카메라 종료후 실행 부분
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows() 위에서 쓰려고 잠깐 주석 달아놨음 /이종석
     if (''.join(face_recog.face_names)==('')):
         ent_list="can't find" #인식 실패한 경우 메시지 출력
     else:
