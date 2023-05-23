@@ -2,7 +2,13 @@ package com.example.doorlock.ui.home
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.Media
 import android.view.LayoutInflater
@@ -11,9 +17,12 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.Toast
 import android.widget.Toolbar
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.contentValuesOf
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -25,9 +34,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.doorlock.R
 import com.example.doorlock.UserListAdapter
 import com.example.doorlock.Users
+import com.example.doorlock.databinding.ActivityMainBinding
+import java.io.File
 
 
 class HomeFragment : Fragment() {
+
+
+    lateinit var filePath: String
+
     private var userList = arrayListOf<Users>(
         Users("소순성", ""),
         Users("이종석", ""),
@@ -37,6 +52,10 @@ class HomeFragment : Fragment() {
 
     private var galLauncher : ActivityResultLauncher<Intent>? = null
     private var camLauncher : ActivityResultLauncher<Intent>? = null
+    lateinit var cameraPermission: ActivityResultLauncher<String>
+    lateinit var storagePermission: ActivityResultLauncher<String>
+    lateinit var cameraLauncher: ActivityResultLauncher<Uri>
+    private var str: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,12 +65,24 @@ class HomeFragment : Fragment() {
                 // Handle the result from the launched activity here
                 val data: Intent? = result.data
                 // Process the data
+                val option = BitmapFactory.Options()
+                option.inSampleSize = 10
+                val bitmap = BitmapFactory.decodeFile(filePath, option)
+                bitmap.let {
+                }
             }
         }
+
         galLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 // Handle the result from the launched activity here
                 val data: Intent? = result.data
+                // Image 상대경로를 가져온다
+                val uri: Uri? = data?.data
+                // Image의 절대경로를 가져온다
+                val imagePath: String? = uri?.let { getRealPathFromURI(it) }
+                // File변수에 File을 집어넣는다
+                val destFile = imagePath?.let { File(it) }
                 // Process the data
             }
         }
@@ -96,4 +127,31 @@ class HomeFragment : Fragment() {
 
         return view
     }
+
+    private fun getRealPathFromURI(contentUri: Uri): String? {
+        if (contentUri.path?.startsWith("/storage") == true) {
+            return contentUri.path
+        }
+        val id = DocumentsContract.getDocumentId(contentUri).split(":")[1]
+        val columns = arrayOf(MediaStore.Files.FileColumns.DATA)
+        val selection = "${MediaStore.Files.FileColumns._ID} = $id"
+        val cursor = activity?.contentResolver?.query(
+            MediaStore.Files.getContentUri("external"),
+            columns,
+            selection,
+            null,
+            null
+        )
+        return try {
+            val columnIndex = cursor?.getColumnIndex(columns[0])
+            if (cursor?.moveToFirst() == true) {
+                cursor.getString(columnIndex ?: 0)
+            } else {
+                null
+            }
+        } finally {
+            cursor?.close()
+        }
+    }
+
 }
