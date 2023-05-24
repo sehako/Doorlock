@@ -1,11 +1,15 @@
 # face_recog.py
-
+#-*- coding: utf-8 -*
 import face_recognition
 import cv2
 import camera
 import os
 import numpy as np
 import datetime
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
 
 class FaceRecog():
     def __init__(self):
@@ -100,7 +104,7 @@ class FaceRecog():
 
 if __name__ == '__main__':
     face_recog = FaceRecog()
-    # print(face_recog.known_face_names) //현재 knowns 폴더의 이름들을 출력
+    #print(face_recog.known_face_names) #//현재 knowns 폴더의 이름들을 출력
     start_time=datetime.datetime.now()
     while True:
         frame = face_recog.get_frame()
