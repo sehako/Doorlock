@@ -47,7 +47,7 @@ class HomeFragment : Fragment() {
         Users("안진원", ""),
         Users("오세학", "")
     )
-    val imagePath: String? = null
+
     var image: Uri? = null
     var imageBitmap: Bitmap? = null
 
@@ -76,7 +76,7 @@ class HomeFragment : Fragment() {
                 val data: Intent? = result.data
                 image = data?.data
                 val imagePath = getPathFromUri(image)
-                Toast.makeText(requireContext(), "" + imagePath, Toast.LENGTH_LONG).show()
+
 
                 if (imagePath != null) {
                     uploadImageToServer(imagePath) // 이미지를 서버로 업로드
