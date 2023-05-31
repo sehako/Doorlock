@@ -64,12 +64,10 @@ class HomeFragment : Fragment() {
             // Handle the result from the launched activity here
             val data: Intent? = result.data
             val bitmap: Bitmap? = data?.extras?.get("data") as Bitmap
-            val imageBytes: ByteArray? = data.extras?.getByteArray("data")
-            Toast.makeText(requireContext(), "" + imageBytes, Toast.LENGTH_LONG).show()
             val file = bitmapToFile(
                     bitmap, SimpleDateFormat("yyyy-mm-dd").format(Date())
                 )
-//            Toast.makeText(requireContext(), "" + file, Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "" + file, Toast.LENGTH_LONG).show()
         }
     }
         
