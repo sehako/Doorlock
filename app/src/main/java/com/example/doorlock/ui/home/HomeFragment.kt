@@ -74,53 +74,36 @@ class HomeFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val camLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            // Handle the result from the launched activity here
-            val data: Intent? = result.data
-            val bitmap: Bitmap? = data?.extras?.get("data") as Bitmap
-            val file = bitmapToFile(
-                    bitmap, SimpleDateFormat("yyyy-mm-dd").format(Date())
-                )
-            Toast.makeText(requireContext(), "" + file, Toast.LENGTH_LONG).show()
-        }
-    }
-        
-       val galLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-           if (result.resultCode == Activity.RESULT_OK) {
-                // Handle the result from the launched activity here
-               val data: Intent? = result.data
-               val imagePath2: String? = getImagePathFromIntentData(data)
-               // Image의 상대경로를 가져온다
-               val image = data?.data
-               // 절대 경로를 가져 오는 함수
-               val imagePath: String? = getPathFromUri(image)
-               Toast.makeText(requireContext(), "" + imagePath, Toast.LENGTH_LONG).show()
-               // File 변수에 File을 집어넣는다
-               val destFile = imagePath?.let { File(it) }
-                // Process the data
-//        val galLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia())
-//        { uri ->
-//            Toast.makeText(requireContext(), "" + uri, Toast.LENGTH_LONG).show()
-//        }
-        val galLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data: Intent? = result.data
-                image = data?.data
-                val imagePath = getPathFromUri(image)
 
-
-                if (imagePath != null) {
-                    uploadImageToServer(imagePath) // 이미지를 서버로 업로드
-                } else {
-                    Toast.makeText(requireContext(), "Invalid image file.", Toast.LENGTH_LONG).show()
+        val camLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    // Handle the result from the launched activity here
+                    val data: Intent? = result.data
+                    val bitmap: Bitmap? = data?.extras?.get("data") as Bitmap
+                    val file = bitmapToFile(
+                        bitmap, SimpleDateFormat("yyyy-mm-dd").format(Date())
+                    )
+                    Toast.makeText(requireContext(), "" + file, Toast.LENGTH_LONG).show()
                 }
             }
-        }
 
-
-
+        val galLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    // Handle the result from the launched activity here
+                    val data: Intent? = result.data
+                    // Image의 상대경로를 가져온다
+                    val image = data?.data
+                    // 절대 경로를 가져 오는 함수
+                    val imagePath: String? = getPathFromUri(image)
+                    uploadImageToServer(imagePath);
+                    Toast.makeText(requireContext(), "" + imagePath, Toast.LENGTH_LONG).show()
+                    // File 변수에 File을 집어넣는다
+                    val destFile = imagePath?.let { File(it) }
+                    // Process the data
+                }
+            }
 
         val menuHost: MenuHost = requireActivity()
         menuHost.addMenuProvider(object : MenuProvider {
@@ -135,9 +118,12 @@ class HomeFragment : Fragment() {
                         camLauncher.launch(intent)
                         true
                     }
+
                     else -> {
-                        val intent = Intent(Intent.ACTION_PICK,
-                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                        val intent = Intent(
+                            Intent.ACTION_PICK,
+                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                        )
                         galLauncher.launch(intent)
                         true
                     }
@@ -171,7 +157,8 @@ class HomeFragment : Fragment() {
         uri ?: return null
 
         val projection = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = requireActivity().contentResolver.query(uri, projection, null, null, null)
+        val cursor =
+            requireActivity().contentResolver.query(uri, projection, null, null, null)
         cursor?.use { c ->
             if (c.moveToFirst()) {
                 val columnIndex = c.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
@@ -185,7 +172,8 @@ class HomeFragment : Fragment() {
 
     private fun uploadImageToServer(imagePath: String?) {
         val file = File(imagePath)
-        val requestFile: RequestBody? = file.asRequestBody("image/*".toMediaTypeOrNull())
+        val requestFile: RequestBody? =
+            file.asRequestBody("image/*".toMediaTypeOrNull())
         val body: MultipartBody.Part? = requestFile?.let {
             MultipartBody.Part.createFormData("image", file.name, it)
         }
@@ -200,16 +188,28 @@ class HomeFragment : Fragment() {
             val call: Call<ResponseBody> = uploadAPIs.uploadImage(body)
 
             call.enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    Toast.makeText(requireContext(), "Image uploaded successfully.", Toast.LENGTH_LONG).show()
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Image uploaded successfully.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    Toast.makeText(requireContext(), "Image upload failed.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "Image upload failed.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             })
         } else {
-            Toast.makeText(requireContext(), "Invalid image file.", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "Invalid image file.", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -218,21 +218,12 @@ class HomeFragment : Fragment() {
         @POST("upload.php")
         fun uploadImage(@Part image: MultipartBody.Part): Call<ResponseBody>
     }
-    private fun getImagePathFromIntentData(intent: Intent?): String? {
-        val uri: Uri? = intent?.data
-        val projection = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor: Cursor? = uri?.let { requireActivity().contentResolver.query(it, projection, null, null, null) }
-        cursor?.use {
-            val columnIndex: Int = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            if (it.moveToFirst()) {
-                return it.getString(columnIndex)
-            }
-        }
-        return null
-    }
-    private fun bitmapToFile(bitmap: Bitmap? , saveName: String): File {
-        val saveDir = requireActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-            .toString() + saveName
+
+
+    private fun bitmapToFile(bitmap: Bitmap?, saveName: String): File {
+        val saveDir =
+            requireActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+                .toString() + saveName
         val file = File(saveDir)
         if (!file.exists()) file.mkdirs()
 
