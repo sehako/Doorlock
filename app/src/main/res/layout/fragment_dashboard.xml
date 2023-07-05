@@ -6,12 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".ui.dashboard.DashboardFragment">
 
-    <Switch
+    <Button
         android:id="@+id/unlock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:scrollbarSize="@android:dimen/app_icon_size"
-        android:checked="false"
+        android:text="잠금해제"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
