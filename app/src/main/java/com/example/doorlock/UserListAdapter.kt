@@ -1,14 +1,27 @@
 package com.example.doorlock
 
 import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.example.doorlock.ui.home.HomeFragment
 
-class UserListAdapter(val context: Context, val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
+class UserListAdapter(private val context: Context, private val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
+
+    interface OnClickInterface {
+        fun OnClick(view: View, position: Int)
+    }
+
+    interface OnLongClickInterface {
+        fun OnLongClick(view: View, position: Int)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val view = LayoutInflater.from(context).inflate(R.layout.user_item, parent, false)
@@ -34,6 +47,10 @@ class UserListAdapter(val context: Context, val userList: ArrayList<Users>) : Re
                 img?.setImageResource(R.mipmap.ic_launcher)
             }
             name.text = userList.name
+
+            name.setOnClickListener{
+            }
+
         }
     }
 }
