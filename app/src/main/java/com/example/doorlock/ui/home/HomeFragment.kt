@@ -1,5 +1,6 @@
 package com.example.doorlock.ui.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,8 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.doorlock.ImageProcessing
 import com.example.doorlock.MainActivity
 import com.example.doorlock.R
+import com.example.doorlock.UserAddActivity
 import com.example.doorlock.UserListAdapter
 import com.example.doorlock.Users
+import com.example.doorlock.databinding.ActivityUserAddBinding
 
 
 class HomeFragment : Fragment() {
@@ -33,8 +36,8 @@ class HomeFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
         val fab: View = view.findViewById(R.id.fab)
         fab.setOnClickListener {
-            val mActivity = activity as MainActivity
-            mActivity.changeFrag(list = true , add_menu = true)
+            val intent = Intent(activity, UserAddActivity::class.java)
+            startActivity(intent)
         }
         val users: RecyclerView = view.findViewById(R.id.rv_profile)
 
