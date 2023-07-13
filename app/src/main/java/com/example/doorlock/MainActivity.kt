@@ -4,21 +4,16 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.doorlock.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private val TAG = this.javaClass.simpleName
     private val callback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             finish()
@@ -53,7 +48,7 @@ class MainActivity : AppCompatActivity() {
     }
     companion object {
         private val REQUIRED_PERMISSIONS =
-            mutableListOf (
+            mutableListOf(
                 Manifest.permission.CAMERA,
                 Manifest.permission.READ_EXTERNAL_STORAGE
             ).apply {
@@ -61,23 +56,5 @@ class MainActivity : AppCompatActivity() {
                     add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }.toTypedArray()
-    }
-    fun changeFrag(list: Boolean, add_menu: Boolean) {
-        if(add_menu) {
-            val navView: BottomNavigationView = binding.navView
-            navView.visibility = View.GONE
-            val bundle = Bundle()
-            bundle.putBoolean("add", list)
-            user_add.arguments = bundle
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.container, user_add)
-                .commit()
-        }
-        else {
-            val main = intent
-            finish()
-            startActivity(main)
-        }
     }
 }
