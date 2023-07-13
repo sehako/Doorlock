@@ -28,7 +28,7 @@ class ImageProcessing : Fragment(){
     private val add_option = arrayOf("Camera", "Gallery")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -81,16 +81,12 @@ class ImageProcessing : Fragment(){
                         camLauncher.launch(intent)
                     }
                     1 -> {
-                        val intent = Intent(
-                            Intent.ACTION_PICK,
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                        )
-                        galLauncher.launch(intent)
+                        val intent = Intent(context, ImageUpload::class.java)
+                        context?.startActivity(intent)
                     }
                 }
             }
-            val dialog = builder.create()
-            dialog.show()
+            builder.show()
         }
         return view
     }
