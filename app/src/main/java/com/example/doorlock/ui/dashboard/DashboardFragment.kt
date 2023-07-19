@@ -6,20 +6,27 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.example.doorlock.R
+import com.example.doorlock.databinding.FragmentDashboardBinding
 
 class DashboardFragment : Fragment() {
+    private var _binding: FragmentDashboardBinding? = null
+    private val binding get() = _binding!!
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = inflater.inflate(R.layout.fragment_dashboard, container, false)
-        val unlockButton: Button = view.findViewById(R.id.unlock)
+        val homeViewModel =
+            ViewModelProvider(this)[DashboardViewModel::class.java]
+        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+        val unlockButton: Button = binding.unlock
 
         unlockButton.setOnClickListener {
 
         }
-        return view
+        return root
     }
 }

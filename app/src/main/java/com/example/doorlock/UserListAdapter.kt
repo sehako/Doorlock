@@ -1,9 +1,6 @@
 package com.example.doorlock
 
 import android.content.Context
-import android.content.Intent
-import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,18 +8,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import com.example.doorlock.ui.home.HomeFragment
 
 class UserListAdapter(private val context: Context, private val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
-
-    interface OnClickInterface {
-        fun OnClick(view: View, position: Int)
-    }
-
-    interface OnLongClickInterface {
-        fun OnLongClick(view: View, position: Int)
-    }
-
+    private var listener : OnItemClickListener? = null
+    private var longClickListener : OnItemLongClickListener? = null
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val view = LayoutInflater.from(context).inflate(R.layout.user_item, parent, false)
         return Holder(view)
@@ -33,12 +22,12 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
     }
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
-        holder?.bind(userList[position], context)
+        holder.bind(userList[position], context)
     }
     inner class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val name = itemView.findViewById<TextView>(R.id.tv_name)
-        val img = itemView.findViewById<ImageView>(R.id.img_photo)
-
+        private val name = itemView.findViewById<TextView>(R.id.tv_name)
+        private val img = itemView.findViewById<ImageView>(R.id.img_photo)
+        private val pos = adapterPosition
         fun bind (userList: Users, context: Context) {
             if (userList.img != "") {
                 val resourceId = context.resources.getIdentifier(userList.img, "drawable", context.packageName)
@@ -47,10 +36,33 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
                 img?.setImageResource(R.mipmap.ic_launcher)
             }
             name.text = userList.name
-
-            name.setOnClickListener{
+            itemView.setOnLongClickListener {
+                Toast.makeText(context, "nice", Toast.LENGTH_LONG).show()
+                true
             }
-
+            val pos = adapterPosition
+            if(pos!= RecyclerView.NO_POSITION)
+            {
+                itemView.setOnClickListener {
+                    listener?.onItemClick(itemView, userList, pos)
+                }
+                itemView.setOnLongClickListener {
+                    longClickListener?.onItemLongClick(itemView, userList, pos)
+                    true
+                }
+            }
         }
+    }
+    interface OnItemClickListener{
+        fun onItemClick(v:View, data: Users, pos : Int)
+    }
+    fun setOnItemClickListener(listener : OnItemClickListener) {
+        this.listener = listener
+    }
+    interface OnItemLongClickListener {
+        fun onItemLongClick(v: View, data: Users, pos: Int)
+    }
+    fun setOnLongItemClickListener(longClickListener: OnItemLongClickListener) {
+        this.longClickListener = longClickListener
     }
 }
