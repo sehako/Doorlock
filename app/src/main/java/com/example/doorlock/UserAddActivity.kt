@@ -73,11 +73,8 @@ class UserAddActivity : AppCompatActivity() {
                         camLauncher.launch(intent)
                     }
                     1 -> {
-                        val intent = Intent(
-                            Intent.ACTION_PICK,
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                        )
-                        galLauncher.launch(intent)
+                        val intent = Intent(this, ImageUpload::class.java)
+                        startActivity(intent)
                     }
                 }
             }

@@ -48,7 +48,6 @@ class ImageUpload : AppCompatActivity(), UploadRequestBody.UploadCallback {
     }
 
     private fun uploadImage() {
-
         if (selectedImageUri == null) {
             binding.layoutRoot.snackbar("Select an Image First")
             return
@@ -65,19 +64,11 @@ class ImageUpload : AppCompatActivity(), UploadRequestBody.UploadCallback {
         binding.progressBar.progress = 0
         val body = UploadRequestBody(file, "image", this)
 
-        MyApi().uploadImage(
-            MultipartBody.Part.createFormData(
-                "image",
-                file.name,
-                body
-            ),
-            RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "json")
+        val requestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "")
+        val imagePart = MultipartBody.Part.createFormData("image", file.name, body)
 
-        ).enqueue(object : Callback<UploadResponse> {
-            override fun onResponse(
-                call: Call<UploadResponse>,
-                response: Response<UploadResponse>
-            ) {
+        MyApi().uploadImage(imagePart, requestBody).enqueue(object : Callback<UploadResponse> {
+            override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                 response.body()?.let {
                     binding.layoutRoot.snackbar(it.message)
                     binding.progressBar.progress = 100
@@ -88,9 +79,9 @@ class ImageUpload : AppCompatActivity(), UploadRequestBody.UploadCallback {
                 binding.layoutRoot.snackbar(t.message!!)
                 binding.progressBar.progress = 0
             }
-
         })
     }
+
 
 
     private fun opeinImageChooser() {
