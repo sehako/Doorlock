@@ -2,10 +2,18 @@ package com.example.doorlock
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaActionSound
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -13,18 +21,35 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.example.doorlock.databinding.ActivityUserAddBinding
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
 
-class UserAddActivity : AppCompatActivity() {
+
+class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
     private lateinit var binding: ActivityUserAddBinding
-    var listCheck : Boolean = false
+    private var listCheck : Boolean = false
+    private var selectedImageUri: Uri? = null
+    private lateinit var nameText : EditText
+    private lateinit var bitmap: Bitmap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityUserAddBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         val imgView = binding.faceImage
-        val nameText:EditText = binding.userName
+        nameText = binding.userName
         val extras = intent.extras
 
         if (extras != null) {
@@ -40,7 +65,7 @@ class UserAddActivity : AppCompatActivity() {
                 if (result.resultCode == Activity.RESULT_OK) {
                     // Handle the result from the launched activity here
                     val data : Intent? = result.data
-                    val bitmap : Bitmap = data?.extras?.get("data") as Bitmap
+                    bitmap = data?.extras?.get("data") as Bitmap
                     imgView.setImageBitmap(bitmap)
                     nameText.hint = "이름 입력"
                 }
@@ -52,8 +77,11 @@ class UserAddActivity : AppCompatActivity() {
                     // Handle the result from the launched activity here
                     val data: Intent? = result.data
                     //이미지 Url
-                    val image = data?.data
-                    imgView.setImageURI(image)
+                    val image = data?.data!!
+                    contentResolver.openInputStream(image)?.use { inputStream ->
+                        bitmap = BitmapFactory.decodeStream(inputStream)
+                    }
+                    imgView.setImageBitmap(bitmap)
                     // Process the data
                     nameText.hint = "이름 입력"
                 }
@@ -93,14 +121,112 @@ class UserAddActivity : AppCompatActivity() {
         when(item.itemId) {
             R.id.check -> {
                 if(listCheck) {
-                    Toast.makeText(this@UserAddActivity, "수정 완료", Toast.LENGTH_LONG).show()
                 }
                 else {
-                    Toast.makeText(this@UserAddActivity, "업로드 완료", Toast.LENGTH_LONG).show()
+                    selectedImageUri = saveToStorage(nameText.text.toString(), bitmap)
+                    uploadImage()
                 }
-                finish()
             }
         }
         return true
+    }
+
+    private fun saveToStorage(filename: String, bitmap: Bitmap): Uri? {
+        val imageName = "$filename.png"
+        var fos : OutputStream? = null
+        var imgUri: Uri? = null
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            this.contentResolver?.also {resolver ->
+                val contentValue = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, imageName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                }
+                val imageUri : Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValue)
+                fos = imageUri?.let {
+                    resolver.openOutputStream(it)
+                }
+                imgUri = imageUri!!
+            }
+        }
+        else {
+            val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val image = File(imageDirectory, imageName)
+//            imgUri = getUriForFile(image)
+            imgUri = FileProvider.getUriForFile(
+                this@UserAddActivity,
+                "${applicationContext.packageName}.fileprovider",
+                image
+            )
+            fos = FileOutputStream(image)
+        }
+        fos?.use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        return imgUri
+    }
+
+    private fun getUriForFile(file: File): Uri {
+        // Use FileProvider to get the content URI for the file
+        return FileProvider.getUriForFile(
+            this,
+            "${applicationContext.packageName}.fileprovider",
+            file
+        )
+    }
+
+    private fun uploadImage() {
+        if (selectedImageUri == null) {
+//            binding.layoutRoot.snackbar("Select an Image First")
+            Toast.makeText(this@UserAddActivity, "이미지 선택해 주세요", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val parcelFileDescriptor = contentResolver.openFileDescriptor(
+            selectedImageUri!!, "r", null
+        ) ?: return
+
+        val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
+        val file = File(cacheDir, contentResolver.getFileName(selectedImageUri!!))
+        val outputStream = FileOutputStream(file)
+        inputStream.copyTo(outputStream)
+//        binding.progressBar.progress = 0
+        val body = UploadRequestBody(file, "image", callback = this)
+
+        val requestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "")
+        val imagePart = MultipartBody.Part.createFormData("image", file.name, body)
+
+        MyApi().uploadImage(imagePart, requestBody).enqueue(object : Callback<UploadResponse> {
+            override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
+                response.body()?.let {
+//                    binding.layoutRoot.snackbar(it.message)
+                    Toast.makeText(this@UserAddActivity, it.message, Toast.LENGTH_SHORT).show()
+//                    binding.progressBar.progress = 100
+                }
+            }
+
+            override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+//                binding.layoutRoot.snackbar(t.message!!)
+                Toast.makeText(this@UserAddActivity, t.message!!, Toast.LENGTH_SHORT).show()
+//                binding.progressBar.progress = 0
+            }
+        })
+        finish()
+    }
+    private fun ContentResolver.getFileName(selectedImageUri: Uri): String {
+        var name = ""
+        val returnCursor = this.query(selectedImageUri, null, null, null, null)
+        if (returnCursor != null) {
+            val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            returnCursor.moveToFirst()
+            name = returnCursor.getString(nameIndex)
+            returnCursor.close()
+        }
+
+        return name
+    }
+
+    override fun onProgressUpdate(percentage: Int) {
+//        binding.progressBar.progress = percentage
     }
 }
