@@ -1,14 +1,21 @@
 package com.example.doorlock.ui.home
 
 import android.app.AlertDialog
+import android.content.ContentUris
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -75,6 +82,7 @@ class HomeFragment : Fragment() {
                 dialog.show()
             }
         })
+        readPicture(requireContext())
 
         userAdapter.setOnLongItemClickListener(object : UserListAdapter.OnItemLongClickListener {
             override fun onItemLongClick(v: View, data: Users, pos: Int) {
@@ -91,7 +99,26 @@ class HomeFragment : Fragment() {
                 dialog.show()
             }
         })
-
         return root
+    }
+    // DCIM, PICTURE 디렉토리 이미지 읽어옴
+    private fun readPicture(context:Context){
+        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(
+            MediaStore.Images.ImageColumns._ID,
+            MediaStore.Images.ImageColumns.TITLE
+        )
+        val sortOrder = "${MediaStore.Images.ImageColumns.TITLE} ASC"
+        val query = context.contentResolver.query(collection, projection, null, null, sortOrder)
+        query?.let { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID)
+            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.TITLE)
+            while(cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val name = cursor.getString(titleColumn)
+                Log.d("HomeFrag", "$id : $name")
+            }
+            cursor.close()
+        }
     }
 }
