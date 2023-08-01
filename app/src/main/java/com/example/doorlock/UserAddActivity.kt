@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -22,6 +23,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.example.doorlock.databinding.ActivityUserAddBinding
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -56,7 +58,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             listCheck = extras.getBoolean("list")
             if(listCheck) {
                 nameText.setText(extras.getString("userName"))
-                extras.getString("userFace")
+                imgView.setImageURI(extras.getString("userFace")!!.toUri())
             }
         }
 
@@ -125,6 +127,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                 else {
                     selectedImageUri = saveToStorage(nameText.text.toString(), bitmap)
                     uploadImage()
+                    finish()
                 }
             }
         }
@@ -140,7 +143,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                 val contentValue = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, imageName)
                     put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/doorlock")
                 }
                 val imageUri : Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValue)
                 fos = imageUri?.let {
@@ -150,7 +153,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             }
         }
         else {
-            val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+            val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock")
             val image = File(imageDirectory, imageName)
 //            imgUri = getUriForFile(image)
             imgUri = FileProvider.getUriForFile(
