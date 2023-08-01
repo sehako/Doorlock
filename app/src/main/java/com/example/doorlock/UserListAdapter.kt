@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 
 class UserListAdapter(private val context: Context, private val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
@@ -30,8 +31,7 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
         private val pos = adapterPosition
         fun bind (userList: Users, context: Context) {
             if (userList.img != "") {
-                val resourceId = context.resources.getIdentifier(userList.img, "drawable", context.packageName)
-                img?.setImageResource(resourceId)
+                img.setImageURI(userList.img.toUri())
             } else {
                 img?.setImageResource(R.mipmap.ic_launcher)
             }
