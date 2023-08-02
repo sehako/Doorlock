@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
@@ -39,8 +40,8 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        userList.clear()
-        readPicture(requireContext())
+//        readPicture(requireContext())
+        getImageFromFile()
         val homeViewModel =
             ViewModelProvider(this)[HomeViewModel::class.java]
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -81,13 +82,13 @@ class HomeFragment : Fragment() {
                 val builder = AlertDialog.Builder(requireContext())
                 builder.setTitle("${data.name}을 삭제하시겠습니까?")
                 builder.setPositiveButton("확인") { dialog, which ->
-                    Toast.makeText(requireContext(), "${getPathFromUri(data.img.toUri())}", Toast.LENGTH_LONG).show()
+//                    Toast.makeText(requireContext(), "${getPathFromUri(data.img.toUri())}", Toast.LENGTH_LONG).show()
                     userAdapter.notifyItemRemoved(pos)
                     userList.removeAt(pos)
-                    val file = File(getPathFromUri(data.img.toUri())!!)
+                    val file = File(data.img.toUri().path!!)
+                    Toast.makeText(requireContext(), "${file}", Toast.LENGTH_LONG).show()
                     if (file.exists()) {
                         val file2 = File(file.absolutePath)
-                        file.delete()
                         file2.delete()
                         Toast.makeText(context, "File deleted.", Toast.LENGTH_SHORT).show()
                     } else {
@@ -105,6 +106,7 @@ class HomeFragment : Fragment() {
     }
     // DCIM, PICTURE 디렉토리 이미지 읽어옴
     private fun readPicture(context:Context){
+        userList.clear()
         val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
         val projection = arrayOf(
@@ -112,9 +114,10 @@ class HomeFragment : Fragment() {
             MediaStore.Images.ImageColumns.TITLE
         )
 
-        val selection = "${MediaStore.Images.Media.ALBUM} = doorlock"
+        val selection = "${Environment.DIRECTORY_PICTURES}=?"
+        val selectionArgs: Array<String> = arrayOf("doorlock")
         val sortOrder = "${MediaStore.Images.ImageColumns.TITLE} ASC"
-        val query = context.contentResolver.query(collection, projection, null, null, sortOrder)
+        val query = context.contentResolver.query(collection, projection, selection, selectionArgs, sortOrder)
         query?.let { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID)
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.TITLE)
@@ -130,6 +133,19 @@ class HomeFragment : Fragment() {
                 Log.e("MainActivity", "$id : $name : $contentUri")
             }
             cursor.close()
+        }
+    }
+
+    private fun getImageFromFile() {
+        userList.clear()
+        val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock").path
+        val file = File(imageDirectory)
+        val files = file.listFiles()
+        if(files != null) {
+            for(onefile in files) {
+                val fileUri = onefile.toURI().toString()
+                userList.add(Users(onefile.name, fileUri))
+            }
         }
     }
 
