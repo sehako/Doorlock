@@ -155,7 +155,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         else {
             val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock")
             val image = File(imageDirectory, imageName)
-//            imgUri = getUriForFile(image)
             imgUri = FileProvider.getUriForFile(
                 this@UserAddActivity,
                 "${applicationContext.packageName}.fileprovider",
@@ -167,15 +166,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
         return imgUri
-    }
-
-    private fun getUriForFile(file: File): Uri {
-        // Use FileProvider to get the content URI for the file
-        return FileProvider.getUriForFile(
-            this,
-            "${applicationContext.packageName}.fileprovider",
-            file
-        )
     }
 
     private fun uploadImage() {
@@ -214,7 +204,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
 //                binding.progressBar.progress = 0
             }
         })
-        finish()
     }
     private fun ContentResolver.getFileName(selectedImageUri: Uri): String {
         var name = ""
