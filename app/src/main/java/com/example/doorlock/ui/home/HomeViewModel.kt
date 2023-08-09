@@ -6,16 +6,20 @@ import androidx.lifecycle.ViewModel
 import com.example.doorlock.Users
 
 class HomeViewModel : ViewModel() {
+    val userList = MutableLiveData<List<Users>>()
+    private val _userList = arrayListOf<Users>()
 
-    private var userList = arrayListOf<Users>(
-        Users("소순성", ""),
-        Users("이종석", ""),
-        Users("안진원", ""),
-        Users("오세학", "")
-    )
-
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is home Fragment"
+    fun toggleUser() {
+        userList.value = _userList
     }
-    val text: LiveData<String> = _text
+
+    fun addUser(user: Users) {
+        _userList.add(user)
+        userList.value = _userList
+    }
+
+    fun deleteUser(user: Users) {
+        _userList.remove(user)
+        userList.value = _userList
+    }
 }

@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.doorlock.databinding.ActivityMainBinding
+import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
     private val callback = object : OnBackPressedCallback(true) {
