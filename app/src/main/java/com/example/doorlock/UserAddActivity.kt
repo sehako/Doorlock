@@ -23,15 +23,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
-import androidx.core.net.toFile
 import androidx.core.net.toUri
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
-import androidx.lifecycle.ViewModelProvider
 import com.example.doorlock.databinding.ActivityUserAddBinding
-import com.example.doorlock.ui.home.HomeFragment
-import com.example.doorlock.ui.home.HomeViewModel
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -51,8 +44,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
     private var selectedImageUri: Uri? = null
     private lateinit var nameText : EditText
     private lateinit var bitmap: Bitmap
-    private var camera: Boolean = false
-    val homeFragment = HomeFragment()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,11 +65,9 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         val camLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
-                    camera = true
                     // Handle the result from the launched activity here
                     val data : Intent? = result.data
                     bitmap = data?.extras?.get("data") as Bitmap
-                    selectedImageUri = saveToStorage(nameText.text.toString(), bitmap)
                     imgView.setImageBitmap(bitmap)
                     nameText.hint = "이름 입력"
                 }
@@ -91,7 +80,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                     val data: Intent? = result.data
                     //이미지 Url
                     val image = data?.data!!
-                    selectedImageUri = image
                     contentResolver.openInputStream(image)?.use { inputStream ->
                         bitmap = BitmapFactory.decodeStream(inputStream)
                     }
@@ -132,12 +120,18 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-            when(item.itemId) {
-                R.id.check -> {
+        when(item.itemId) {
+            R.id.check -> {
+                if(listCheck) {
+                }
+                else {
+                    selectedImageUri = saveToStorage(nameText.text.toString(), bitmap)
                     uploadImage()
+                    finish()
                 }
             }
-            return true
+        }
+        return true
     }
 
     private fun saveToStorage(filename: String, bitmap: Bitmap): Uri? {
@@ -176,6 +170,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
 
     private fun uploadImage() {
         if (selectedImageUri == null) {
+//            binding.layoutRoot.snackbar("Select an Image First")
             Toast.makeText(this@UserAddActivity, "이미지 선택해 주세요", Toast.LENGTH_SHORT).show()
             return
         }
@@ -188,25 +183,26 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         val file = File(cacheDir, contentResolver.getFileName(selectedImageUri!!))
         val outputStream = FileOutputStream(file)
         inputStream.copyTo(outputStream)
+//        binding.progressBar.progress = 0
         val body = UploadRequestBody(file, "image", callback = this)
 
         val requestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "")
-        val imagePart = MultipartBody.Part.createFormData("image", file.name, body)
+        val customFileName = "${nameText.text.toString()}.png"
+        val imagePart = MultipartBody.Part.createFormData("image", customFileName, body)
 
         MyApi().uploadImage(imagePart, requestBody).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                 response.body()?.let {
+//                    binding.layoutRoot.snackbar(it.message)
                     Toast.makeText(this@UserAddActivity, it.message, Toast.LENGTH_SHORT).show()
-                    saveToStorage(nameText.text.toString(), bitmap)
-                    finish()
+//                    binding.progressBar.progress = 100
                 }
             }
 
             override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+//                binding.layoutRoot.snackbar(t.message!!)
                 Toast.makeText(this@UserAddActivity, t.message!!, Toast.LENGTH_SHORT).show()
-                if(camera) {
-                    selectedImageUri!!.toFile().delete()
-                }
+//                binding.progressBar.progress = 0
             }
         })
     }
