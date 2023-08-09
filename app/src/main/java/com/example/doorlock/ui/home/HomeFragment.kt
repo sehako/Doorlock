@@ -1,15 +1,13 @@
 package com.example.doorlock.ui.home
 
-import android.R.attr.path
 import android.app.AlertDialog
-import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -40,8 +38,6 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-//        readPicture(requireContext())
-        getImageFromFile()
         val homeViewModel =
             ViewModelProvider(this)[HomeViewModel::class.java]
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -51,92 +47,52 @@ class HomeFragment : Fragment() {
         val userAdapter = UserListAdapter(requireContext(), userList)
         val linearManager = LinearLayoutManager(requireContext())
 
+        getImageFromFile(userList)
+
         fab.setOnClickListener {
-            val intent = Intent(requireContext(), UserAddActivity::class.java)
-            startActivity(intent)
+            if(checkForInternet(requireContext())) {
+                val intent = Intent(requireContext(), UserAddActivity::class.java)
+                startActivity(intent)
+            }
+            else {
+                Toast.makeText(requireContext(), "인터넷이 연결되어 있지 않습니다!", Toast.LENGTH_LONG).show()
+            }
         }
         users.adapter = userAdapter
         users.layoutManager = linearManager
 
-        userAdapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
-            override fun onItemClick(v: View, data: Users, pos: Int) {
-                val builder = AlertDialog.Builder(requireContext())
-                builder.setTitle("${data.name}을 수정하시겠습니까?")
-                builder.setPositiveButton("확인") { dialog, which ->
-                    val intent = Intent(requireContext(), UserAddActivity::class.java)
-                    intent.putExtra("list", true)
-                    intent.putExtra("userName", data.name)
-                    intent.putExtra("userFace", data.img)
-                    startActivity(intent)
-                }
-                builder.setNegativeButton("취소") { dialog, which ->
-                    dialog.cancel()
-                }
-                val dialog = builder.create()
-                dialog.show()
-            }
-        })
-
         userAdapter.setOnLongItemClickListener(object : UserListAdapter.OnItemLongClickListener {
             override fun onItemLongClick(v: View, data: Users, pos: Int) {
-                val builder = AlertDialog.Builder(requireContext())
-                builder.setTitle("${data.name}을 삭제하시겠습니까?")
-                builder.setPositiveButton("확인") { dialog, which ->
+                if(checkForInternet(requireContext())) {
+                    val builder = AlertDialog.Builder(requireContext())
+                    builder.setTitle("${data.name}을 삭제하시겠습니까?")
+                    builder.setPositiveButton("확인") { dialog, which ->
 //                    Toast.makeText(requireContext(), "${getPathFromUri(data.img.toUri())}", Toast.LENGTH_LONG).show()
-                    userAdapter.notifyItemRemoved(pos)
-                    userList.removeAt(pos)
-                    val file = File(data.img.toUri().path!!)
-                    Toast.makeText(requireContext(), "${file}", Toast.LENGTH_LONG).show()
-                    if (file.exists()) {
-                        val file2 = File(file.absolutePath)
-                        file2.delete()
-                        Toast.makeText(context, "File deleted.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "File not exists", Toast.LENGTH_SHORT).show()
+                        userAdapter.notifyItemRemoved(pos)
+                        userList.removeAt(pos)
+                        val file = File(data.img.toUri().path!!)
+                        if (file.exists()) {
+                            val file2 = File(file.absolutePath)
+                            file2.delete()
+                            Toast.makeText(context, "사용자 삭제", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "사용자 삭제 실패", Toast.LENGTH_SHORT).show()
+                        }
                     }
+                    builder.setNegativeButton("취소") { dialog, which ->
+                        dialog.cancel()
+                    }
+                    val dialog = builder.create()
+                    dialog.show()
                 }
-                builder.setNegativeButton("취소") { dialog, which ->
-                    dialog.cancel()
+                else {
+                    Toast.makeText(requireContext(), "인터넷 연결 없음", Toast.LENGTH_LONG).show()
                 }
-                val dialog = builder.create()
-                dialog.show()
             }
         })
         return root
     }
-    // DCIM, PICTURE 디렉토리 이미지 읽어옴
-    private fun readPicture(context:Context){
-        userList.clear()
-        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
-        val projection = arrayOf(
-            MediaStore.Images.ImageColumns._ID,
-            MediaStore.Images.ImageColumns.TITLE
-        )
-
-        val selection = "${Environment.DIRECTORY_PICTURES}=?"
-        val selectionArgs: Array<String> = arrayOf("doorlock")
-        val sortOrder = "${MediaStore.Images.ImageColumns.TITLE} ASC"
-        val query = context.contentResolver.query(collection, projection, selection, selectionArgs, sortOrder)
-        query?.let { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID)
-            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns.TITLE)
-            while(cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-                val name = cursor.getString(titleColumn)
-                val contentUri: Uri = ContentUris.withAppendedId(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    id
-                )
-                userList.add(Users(name, "$contentUri"))
-
-                Log.e("MainActivity", "$id : $name : $contentUri")
-            }
-            cursor.close()
-        }
-    }
-
-    private fun getImageFromFile() {
+    private fun getImageFromFile(userList: ArrayList<Users>) {
         userList.clear()
         val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock").path
         val file = File(imageDirectory)
@@ -148,21 +104,15 @@ class HomeFragment : Fragment() {
             }
         }
     }
+    private fun checkForInternet(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
 
-    fun getPathFromUri(uri: Uri?): String? {
-        uri ?: return null
-
-        val cursor = requireActivity().contentResolver.query(uri, null, null, null, null)
-        cursor?.moveToNext()
-
-        val columnIndex = cursor?.getColumnIndex("_data")
-        val path = if (columnIndex != null && columnIndex >= 0) {
-            cursor.getString(columnIndex)
-        } else {
-            null
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            else -> false
         }
-
-        cursor?.close()
-        return path
     }
 }

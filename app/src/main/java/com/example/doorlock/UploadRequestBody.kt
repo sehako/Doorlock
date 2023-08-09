@@ -18,7 +18,6 @@ class UploadRequestBody(
 ) : RequestBody() {
     override fun contentType(): MediaType? = "$contentType/*".toMediaTypeOrNull()
 
-
     override fun contentLength() = file.length()
 
     override fun writeTo(sink: BufferedSink) {
@@ -41,7 +40,6 @@ class UploadRequestBody(
 
 
     interface UploadCallback {
-
         fun onProgressUpdate(percentage: Int)
 
     }
