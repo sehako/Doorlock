@@ -6,6 +6,7 @@ import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.DELETE
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -19,10 +20,9 @@ interface MyApi {
         @Part("desc") desc: RequestBody
     ): Call<UploadResponse>
 
-    @Multipart
-    @DELETE("Api.php?apicall=upload")
+    @DELETE("Api.php?apicall=delete")
     fun deleteImage(
-        @Part image: MultipartBody.Part
+        @Header("imgName") imageName: String,
     ): Call<UploadResponse>
 
     companion object {

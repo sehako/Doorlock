@@ -7,7 +7,7 @@ import com.example.doorlock.Users
 
 class HomeViewModel : ViewModel() {
     val userList = MutableLiveData<List<Users>>()
-    private val _userList = arrayListOf<Users>()
+    val _userList = arrayListOf<Users>()
 
     fun toggleUser() {
         userList.value = _userList
@@ -18,8 +18,8 @@ class HomeViewModel : ViewModel() {
         userList.value = _userList
     }
 
-    fun deleteUser(user: Users) {
-        _userList.remove(user)
+    fun deleteUser(position: Int) {
+        _userList.removeAt(position)
         userList.value = _userList
     }
 }

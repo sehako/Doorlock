@@ -28,7 +28,6 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
     inner class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val name = itemView.findViewById<TextView>(R.id.tv_name)
         private val img = itemView.findViewById<ImageView>(R.id.img_photo)
-        private val pos = adapterPosition
         fun bind (userList: Users, context: Context) {
             if (userList.img != "") {
                 img.setImageURI(userList.img.toUri())
