@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.LayoutInflater
@@ -14,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,14 +21,14 @@ import com.example.doorlock.UserAddActivity
 import com.example.doorlock.UserListAdapter
 import com.example.doorlock.Users
 import com.example.doorlock.databinding.FragmentHomeBinding
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(), Observer<List<Users>> {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-
-    private var userList = arrayListOf<Users>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -44,10 +44,12 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
         val fab: View = binding.fab
         val users: RecyclerView = binding.rvProfile
-        val userAdapter = UserListAdapter(requireContext(), userList)
+        val userAdapter = UserListAdapter(requireContext(), homeViewModel._userList)
         val linearManager = LinearLayoutManager(requireContext())
 
-        getImageFromFile(userList)
+        getImageFromFile(homeViewModel._userList)
+
+        homeViewModel.userList. observe(requireActivity(), this)
 
         fab.setOnClickListener {
             if(checkForInternet(requireContext())) {
@@ -69,7 +71,7 @@ class HomeFragment : Fragment() {
                     builder.setPositiveButton("확인") { dialog, which ->
 //                    Toast.makeText(requireContext(), "${getPathFromUri(data.img.toUri())}", Toast.LENGTH_LONG).show()
                         userAdapter.notifyItemRemoved(pos)
-                        userList.removeAt(pos)
+                        homeViewModel.deleteUser(pos)
                         val file = File(data.img.toUri().path!!)
                         if (file.exists()) {
                             val file2 = File(file.absolutePath)
@@ -114,5 +116,11 @@ class HomeFragment : Fragment() {
             activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
             else -> false
         }
+    }
+
+    override fun onChanged(value: List<Users>) {
+        val homeViewModel =
+            ViewModelProvider(this)[HomeViewModel::class.java]
+        getImageFromFile(homeViewModel._userList)
     }
 }
