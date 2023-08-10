@@ -20,7 +20,6 @@ interface MyApi {
         @Part("desc") desc: RequestBody
     ): Call<UploadResponse>
 
-    @Multipart
     @DELETE("Api.php?apicall=delete")
     fun deleteImage(
         @Header("imgName") imageName: String,

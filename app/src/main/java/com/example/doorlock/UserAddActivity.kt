@@ -19,6 +19,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +36,7 @@ import com.example.doorlock.ui.home.HomeViewModel
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -137,9 +139,8 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                         Toast.makeText(baseContext, "사진 선택", Toast.LENGTH_SHORT).show()
                     }
                     else {
-                        uploadImage()
 //                        homeViewModel.addUser(Users(nameText.text.toString(), selectedImageUri.toString()))
-                        finish()
+                        uploadImage()
                     }
                 }
             }
@@ -196,12 +197,17 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         inputStream.copyTo(outputStream)
         val body = UploadRequestBody(file, "image", callback = this)
 
-        val requestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "")
-        val imagePart = MultipartBody.Part.createFormData("image", file.name, body)
+//        val requestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), "")
+        val requestBody = "".toRequestBody("multipart/form-data".toMediaTypeOrNull())
+        val customFileName = "${nameText.text.toString()}.png"
+        val imagePart = MultipartBody.Part.createFormData("image", customFileName, body)
 
         MyApi().uploadImage(imagePart, requestBody).enqueue(object : Callback<UploadResponse> {
             override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
                 response.body()?.let {
+                    if(camera){
+                        finish()
+                    }
                     Toast.makeText(this@UserAddActivity, it.message, Toast.LENGTH_SHORT).show()
                     saveToStorage(nameText.text.toString(), bitmap)
                     finish()
