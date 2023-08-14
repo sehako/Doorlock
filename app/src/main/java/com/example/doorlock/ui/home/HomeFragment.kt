@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.doorlock.MyApi
 import com.example.doorlock.RetrofitInterface
 import com.example.doorlock.RetrofitTestClient
+import com.example.doorlock.UploadRequestBody
 import com.example.doorlock.UploadResponse
 import com.example.doorlock.UserAddActivity
 import com.example.doorlock.UserListAdapter
@@ -132,14 +133,13 @@ class HomeFragment : Fragment(), Observer<List<Users>> {
     }
 
     private fun deleteImage(userName: String, file: File, adapter: UserListAdapter, viewModel: HomeViewModel, position: Int) {
-        val body = userName
         val retrofitInterface: RetrofitInterface = retrofit!!.create(RetrofitInterface::class.java)
-        val call: Call<String> = retrofitInterface.del_request(body)
+        val call: Call<String> = retrofitInterface.del_request("123.png")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             call.enqueue(object : Callback<String>, retrofit2.Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
                     Log.e("uploadChat()", "성공 : $response")
-                    file.delete()
+//                    file.delete()
                 }
 
                 override fun onFailure(call: Call<String>, t: Throwable) {

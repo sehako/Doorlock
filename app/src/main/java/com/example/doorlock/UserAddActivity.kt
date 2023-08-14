@@ -222,10 +222,15 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
     }
 
     private fun uploadFile(imageFile: File, imageFileName: String) {
+        // 요청 파일
         val requestFile: RequestBody = imageFile.asRequestBody("multipart/form-data".toMediaType())
+        // 이미지 이름 + 요청 파일을 합쳐 uploaded_file이라는 바디로 만듦
         val body: MultipartBody.Part = MultipartBody.Part.createFormData("uploaded_file", "$imageFileName.png", requestFile)
+        // 래트로핏 싱글톤에 인터페이스 적용
         val retrofitInterface: RetrofitInterface = retrofit!!.create(RetrofitInterface::class.java)
+        // equeue할 변수 선언
         val call: Call<String> = retrofitInterface.request(body)
+        // 서버에 요청
         call.enqueue(object : Callback<String> {
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 Log.e("uploadChat()", "성공 : $response")
@@ -238,7 +243,8 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             }
         })
     }
-    fun uriToFile(context: Context, uri: Uri): File? {
+
+    private fun uriToFile(context: Context, uri: Uri): File? {
         val filePathColumn = arrayOf(MediaStore.Images.Media.DATA)
         val cursor = context.contentResolver.query(uri, filePathColumn, null, null, null)
         cursor?.use {
