@@ -11,6 +11,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 
+
 interface MyApi {
 
     @Multipart
@@ -20,10 +21,14 @@ interface MyApi {
         @Part("desc") desc: RequestBody
     ): Call<UploadResponse>
 
-    @DELETE("Api.php?apicall=delete")
-    fun deleteImage(
+    @Multipart
+    @POST("upload.php")
+    fun uploadRequest(@Part file: MultipartBody.Part): Call<String>
+
+    @DELETE("delete.php")
+    fun deleteRequest(
         @Header("imgName") imageName: String,
-    ): Call<UploadResponse>
+    ): Call<String>
 
     companion object {
         operator fun invoke(): MyApi {
