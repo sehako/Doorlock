@@ -129,7 +129,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                     }
                     else {
                         val imageUri = saveToStorage(nameText.text.toString(), bitmap)
-                        val imgFile: File = uriToFile(this@UserAddActivity, imageUri!!)!!
+                        val imgFile: File = uriToFilePath(this@UserAddActivity, imageUri!!)!!
                         uploadFile(imgFile, nameText.text.toString())
                     }
                 }
@@ -244,7 +244,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         })
     }
 
-    private fun uriToFile(context: Context, uri: Uri): File? {
+    private fun uriToFilePath(context: Context, uri: Uri): File? {
         val filePathColumn = arrayOf(MediaStore.Images.Media.DATA)
         val cursor = context.contentResolver.query(uri, filePathColumn, null, null, null)
         cursor?.use {

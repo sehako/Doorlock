@@ -89,7 +89,11 @@ class HomeFragment : Fragment(), Observer<List<Users>> {
                     builder.setTitle("${data.name}을 삭제하시겠습니까?")
                     builder.setPositiveButton("확인") { _, _ ->
                         val file = File(data.img.toUri().path!!)
+                        val deleteFile = File(file.absolutePath)
                         deleteImage(userName = data.name, file, userAdapter, homeViewModel, pos)
+                        userAdapter.notifyItemRemoved(pos)
+                        homeViewModel._userList.removeAt(pos)
+                        deleteFile.delete()
                     }
                     builder.setNegativeButton("취소") { dialog, _ ->
                         dialog.cancel()
@@ -112,7 +116,8 @@ class HomeFragment : Fragment(), Observer<List<Users>> {
         if(files != null) {
             for(onefile in files) {
                 val fileUri = onefile.toURI().toString()
-                userList.add(Users(onefile.name, fileUri))
+                val fileName = onefile.name.replace(".png", "")
+                userList.add(Users(fileName, fileUri))
             }
         }
     }
@@ -134,12 +139,11 @@ class HomeFragment : Fragment(), Observer<List<Users>> {
 
     private fun deleteImage(userName: String, file: File, adapter: UserListAdapter, viewModel: HomeViewModel, position: Int) {
         val retrofitInterface: RetrofitInterface = retrofit!!.create(RetrofitInterface::class.java)
-        val call: Call<String> = retrofitInterface.del_request("123.png")
+        val call: Call<String> = retrofitInterface.del_request(userName)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             call.enqueue(object : Callback<String>, retrofit2.Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
                     Log.e("uploadChat()", "성공 : $response")
-//                    file.delete()
                 }
 
                 override fun onFailure(call: Call<String>, t: Throwable) {
