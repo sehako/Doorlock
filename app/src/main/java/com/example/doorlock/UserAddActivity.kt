@@ -1,19 +1,20 @@
 package com.example.doorlock
 
+import android.R.attr.height
+import android.R.attr.width
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.provider.OpenableColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
@@ -26,36 +27,29 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.example.doorlock.databinding.ActivityUserAddBinding
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.create
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
 
 
-class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
+class UserAddActivity : AppCompatActivity() {
     private lateinit var binding: ActivityUserAddBinding
     private var selectedImageUri: Uri? = null
     private lateinit var nameText : EditText
-    private lateinit var imgView : ImageView
     private lateinit var bitmap: Bitmap
-    private val retrofit = RetrofitTestClient.client
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityUserAddBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        imgView = binding.faceImage
+        val imgView = binding.faceImage
         nameText = binding.userName
-        val add_button = binding.addButton
 
         val camLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -63,7 +57,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                     // Handle the result from the launched activity here
                     val data : Intent? = result.data
                     bitmap = data?.extras?.get("data") as Bitmap
-                    imgView.setImageBitmap(bitmap)
+                    imgView.setImageURI(selectedImageUri)
                     nameText.hint = "이름 입력"
                 }
             }
@@ -85,7 +79,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                 }
             }
 
-        add_button.setOnClickListener {
+        imgView.setOnClickListener {
             val builder = AlertDialog.Builder(this@UserAddActivity)
             builder.setTitle("이미지 선택")
 
@@ -93,7 +87,7 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
                 when(which) {
                     0 -> {
                         camLauncher.launch(
-                            Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, selectedImageUri)
+                            Intent(MediaStore.ACTION_IMAGE_CAPTURE_SECURE).putExtra(MediaStore.EXTRA_OUTPUT, selectedImageUri)
                         )
                     }
                     1 -> {
@@ -110,7 +104,6 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             dialog.show()
         }
     }
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.user_add, menu)
@@ -118,18 +111,18 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        val homeViewModel = ViewModelProvider(this@UserAddActivity)[HomeViewModel::class.java]
             when(item.itemId) {
                 R.id.check -> {
+                    // 이미지 선택, 이름 입력 확인
                     if(nameText.text.toString() == "") {
                         Toast.makeText(baseContext, "이름 입력", Toast.LENGTH_SHORT).show()
                     }
-                    else if(imgView.drawable == null) {
+                    else if(selectedImageUri == null) {
                         Toast.makeText(baseContext, "사진 선택", Toast.LENGTH_SHORT).show()
                     }
                     else {
-                        val imageUri = saveToStorage(nameText.text.toString(), bitmap)
-                        val imgFile: File = uriToFilePath(this@UserAddActivity, imageUri!!)!!
+                        // 파일 저장
+                        val imgFile: File = uriToFilePath(this@UserAddActivity, selectedImageUri!!)!!
                         uploadFile(imgFile, nameText.text.toString())
                     }
                 }
@@ -166,59 +159,9 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
             fos = FileOutputStream(image)
         }
         fos?.use {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 95, it)
         }
         return imgUri
-    }
-
-    private fun uploadImage() {
-        if (selectedImageUri == null) {
-            Toast.makeText(this@UserAddActivity, "이미지 선택해 주세요", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val parcelFileDescriptor = contentResolver.openFileDescriptor(
-            selectedImageUri!!, "r", null
-        ) ?: return
-
-        val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
-        val file = File(cacheDir, contentResolver.getFileName(selectedImageUri!!))
-        val outputStream = FileOutputStream(file)
-        inputStream.copyTo(outputStream)
-        val body = UploadRequestBody(file, "image", callback = this)
-
-        val requestBody = "".toRequestBody("multipart/form-data".toMediaTypeOrNull())
-        val customFileName = "${nameText.text.toString()}.png"
-        val imagePart = MultipartBody.Part.createFormData("image", customFileName, body)
-
-        MyApi().uploadImage(imagePart, requestBody).enqueue(object : Callback<UploadResponse> {
-            override fun onResponse(call: Call<UploadResponse>, response: Response<UploadResponse>) {
-                response.body()?.let {
-                    saveToStorage(nameText.text.toString(), bitmap)
-                    Toast.makeText(this@UserAddActivity, it.message, Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-            }
-
-            override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                Toast.makeText(this@UserAddActivity, t.message!!, Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-    private fun ContentResolver.getFileName(selectedImageUri: Uri): String {
-        var name = ""
-        val returnCursor = this.query(selectedImageUri, null, null, null, null)
-        if (returnCursor != null) {
-            val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            returnCursor.moveToFirst()
-            name = returnCursor.getString(nameIndex)
-            returnCursor.close()
-        }
-
-        return name
-    }
-    override fun onProgressUpdate(percentage: Int) {
-//        binding.progressBar.progress = percentage
     }
 
     private fun uploadFile(imageFile: File, imageFileName: String) {
@@ -227,13 +170,14 @@ class UserAddActivity : AppCompatActivity(), UploadRequestBody.UploadCallback {
         // 이미지 이름 + 요청 파일을 합쳐 uploaded_file이라는 바디로 만듦
         val body: MultipartBody.Part = MultipartBody.Part.createFormData("uploaded_file", "$imageFileName.png", requestFile)
         // 래트로핏 싱글톤에 인터페이스 적용
-        val retrofitInterface: RetrofitInterface = retrofit!!.create(RetrofitInterface::class.java)
+//        val retrofitInterface: RetrofitInterface = retrofit!!.create(RetrofitInterface::class.java)
         // equeue할 변수 선언
-        val call: Call<String> = retrofitInterface.request(body)
-        // 서버에 요청
-        call.enqueue(object : Callback<String> {
+//        val call: Call<String> = retrofitInterface.request(body)
+
+        MyApi().uploadRequest(body).enqueue(object : Callback<String> {
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 Log.e("uploadChat()", "성공 : $response")
+//                imageFile.delete()
                 finish()
             }
 

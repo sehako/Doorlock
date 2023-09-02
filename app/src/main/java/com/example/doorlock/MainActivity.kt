@@ -44,11 +44,11 @@ class MainActivity : AppCompatActivity() {
 
         // 버전에 따른 권한
         val reqPermission = if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ) {
-            android.Manifest.permission.READ_MEDIA_IMAGES
+            Manifest.permission.READ_MEDIA_IMAGES
         } else if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ) {
-            android.Manifest.permission.READ_EXTERNAL_STORAGE
+            Manifest.permission.READ_EXTERNAL_STORAGE
         } else {
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
         }
 
         // 권한 체크
@@ -69,9 +69,9 @@ class MainActivity : AppCompatActivity() {
         IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (!allPermissionsGranted()) {
-            Toast.makeText(this,
-                "권한 승인이 필요합니다.",
-                Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this,
+//                "권한 승인이 필요합니다.",
+//                Toast.LENGTH_SHORT).show()
         }
     }
     companion object {
