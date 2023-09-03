@@ -19,6 +19,14 @@ import datetime
 import RPi.GPIO as GPIO
 import time
 import socket
+import threading
+
+# 소켓 설정
+HOST='ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com'
+PORT=9000
+client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+client_socket.connect((HOST, PORT))
+
 
 # 부저 설정
 scale = [262,294,330,349,392,440,494,523]
@@ -47,44 +55,57 @@ camera = picamera.PiCamera()
 camera.resolution = (320, 240)
 output = np.empty((240, 320, 3), dtype=np.uint8)
 
+#while문 조건 설정
+restart=1
 while True:
-    # 변수 설정
-    face_locations = []
-    face_encodings = []
-    
-    replay=0
-    count=0
-    seconds_to_run=5
-    start_time=datetime.datetime.now()
-    name = "Capture Failed"
-    name_compare=""
-    wave_count=0
-    
-    # 라즈베리 내에서 이미지를 받아와서 얼굴인식을 수행, 결과를 배열로 저장 마지막 print문은 서버쪽으로 초기설정 완료 신호 보내도?
-    print("Loading known face image(s)")
-    
-    known_face_encodings = []
-    known_face_names = []
-    
-    dirname = 'knowns'
-    files = os.listdir(dirname)
-    origin_dirname = 'origin_file'
-    origin_files = os.listdir(origin_dirname)
-    for filename in files:
-        name, ext = os.path.splitext(filename)
-        known_face_names.append(name)
-        pathname = os.path.join(dirname, filename)
-        img = face_recognition.load_image_file(pathname)
-        face_encoding = face_recognition.face_encodings(img)[0]
-        known_face_encodings.append(face_encoding)
-    print(known_face_names)
-    '''                
-    obama_image = face_recognition.load_image_file("image.jpg")
-    obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
-    '''
-    
+    if (restart==1):
+        restart=0
+        # 변수 설정
+        face_locations = []
+        face_encodings = []
+        
+        replay=0
+        count=0
+        seconds_to_run=5
+        start_time=datetime.datetime.now()
+        wave_count=0
+        
+        # 라즈베리 내에서 이미지를 받아와서 얼굴인식을 수행, 결과를 배열로 저장 마지막 print문은 서버쪽으로 초기설정 완료 신호 보내도?
+        print("Loading known face image(s)")
+        
+        known_face_encodings = []
+        known_face_names = []
+        
+        
+        origin_dirname = 'test_file'
+        origin_files = os.listdir(origin_dirname)
+        # origin_file에서 원본영상들을 인코딩하여 knowns에 저장
+        for filename in origin_files:
+            img= Image.open('test_file/'+filename).convert('RGB')
+            name, ext = os.path.splitext(filename)
+            img_size=img.size
+            image = img.resize((int(img_size[0]*(0.3)), int(img_size[1]*(0.3))))
+            image=image.rotate(270)
+            image.save('knowns/'+'convert_'+filename)
+        # knowns이미지 받아와서 얼굴인식 수행
+        dirname = 'knowns'
+        files = os.listdir(dirname)
+        for filename in files:
+            name, ext = os.path.splitext(filename)
+            known_face_names.append(name)
+            pathname = os.path.join(dirname, filename)
+            img = face_recognition.load_image_file(pathname)
+            face_encoding = face_recognition.face_encodings(img)[0]
+            known_face_encodings.append(face_encoding)
+        print(known_face_names)
+        '''                
+        obama_image = face_recognition.load_image_file("image.jpg")
+        obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
+        '''
+        
     # 초음파로 일정 거리 이상 가까워지면 아래 코드로 넘어간다 or 서버에서 사진이 전송되면 continue로 다시 처음으로 돌아간다
     while True:
+        
         # 초음파 출력 실패 시 0.5초의 시간을 가지고 다시 전송
         GPIO.output(trig, False)
         time.sleep(0.5)
@@ -112,6 +133,8 @@ while True:
     	
         if (wave_count>=3):
             print("얼굴인식을 시작합니다")
+            name_origin = "Capture Failed"
+            name_compare=""
             pwm=GPIO.PWM(buzzer,scale[6])
             pwm.start(30)
             time.sleep(0.1)
@@ -120,21 +143,37 @@ while True:
             
             time.sleep(1)
             break
-        pre_origin_files = origin_files
-        origin_files = os.listdir(origin_dirname)
         # 서버와 통신 부분, 성공시 continue로 시작으로 돌아가게 설정
-        if (pre_origin_files != origin_files):
-            replay=1
+        
+        data = client_socket.recv(1024)
+        msg=data.decode()
+        # 소켓 통신 수신 결과가 2면 origin폴더를 지우고 서버에서 사진을 다시 받아온다
+        if (msg == '2'):
             for filename in origin_files:
-                img= Image.open('origin_file/'+filename).convert('RGB')
-                name, ext = os.path.splitext(filename)
-                img_size=img.size
-                image = img.resize((int(img_size[0]*(0.3)), int(img_size[1]*(0.3))))
-                image=image.rotate(270)
-                image.save('knowns/'+'convert_'+filename)
-            break
+                os.remove('origin_file/'+filename)
+                os.system('scp -i /home/doorlock/key77.pem ubuntu@52.79.155.171:/var/www/html/uploads/* /home/doorlock/origin_file')
+            replay=1
+        # 소켓 통신 수신 결과가 3이면 모터를 돌려 문을 열고 다시 닫는다.
+        if (msg == '3'):
+            GPIO.output(in1,True)
+            GPIO.output(in2,False)
+            GPIO.output(en,True)
+            time.sleep(1)
+            GPIO.output(in1,False)
+            GPIO.output(in2,False)
+            GPIO.output(en,False)
+            time.sleep(5)
+            GPIO.output(in1,False)
+            GPIO.output(in2,True)
+            GPIO.output(en,True)
+            time.sleep(2)
+            GPIO.output(in1,False)
+            GPIO.output(in2,False)
+            GPIO.output(en,False)
+        
     if replay==1:
         repay=0
+        resatrt=1
         continue
         
     
@@ -156,19 +195,19 @@ while True:
     
             # 정확도 비교하여 맞는 얼굴인지 판단, 아니면 unknowns로 설정
             if min_value < 0.5: #정확도 조절
-                name_compare=name
+                name_compare=name_origin
                 index = np.argmin(distances)
-                name = known_face_names[index]
+                name_origin = known_face_names[index]
                 
             else:
-                name="Unknowns"
+                name_origin="Unknowns"
         # 얼굴인식 실패 시 capture failed로 설정
         if len(face_locations)==0:
-            name="Capture Failed"
+            name_origin="Capture Failed"
         count+=1
         # 얼굴 인식 연속 2회 성공 시 통과 및 부저음과 모터 돌리기
-        if name!="Unknowns" and name!="Capture Failed" and name==name_compare:
-            print(name + " " + datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
+        if name_origin!="Unknowns" and name_origin!="Capture Failed" and name_origin==name_compare:
+            print(name_origin + " " + datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
             pwm=GPIO.PWM(buzzer,100)
             pwm.start(30)
             for i in range(3):
@@ -182,22 +221,35 @@ while True:
             GPIO.output(in1,True)
             GPIO.output(in2,False)
             GPIO.output(en,True)
-            time.sleep(2)
+            time.sleep(0.5)
             GPIO.output(in1,False)
             GPIO.output(in2,False)
             GPIO.output(en,False)
+            time.sleep(2)
+            GPIO.output(in1,False)
+            GPIO.output(in2,True)
+            GPIO.output(en,True)
+            time.sleep(0.5)
+            GPIO.output(in1,False)
+            GPIO.output(in2,False)
+            GPIO.output(en,False)
+            
+            restart=0
+            count=0
+            time.sleep(1)
             break
         # 얼굴인식 5번 실패 시 종료 및 부저 울리기
         if count==5:
-            print(name + " " + datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
+            print(name_origin + " " + datetime.datetime.today().strftime("%Y/%m/%d %H:%M:%S"))
             pwm=GPIO.PWM(buzzer,262)
             pwm.start(50.0)
             time.sleep(1)
     
             pwm.stop()
-
+            count=0
+            restart=0
+            time.sleep(1)
             break
-        print(name)
     
     
     
