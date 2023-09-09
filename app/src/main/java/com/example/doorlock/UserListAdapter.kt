@@ -36,7 +36,6 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
             }
             name.text = userList.name
             itemView.setOnLongClickListener {
-                Toast.makeText(context, "nice", Toast.LENGTH_LONG).show()
                 true
             }
             val pos = adapterPosition
