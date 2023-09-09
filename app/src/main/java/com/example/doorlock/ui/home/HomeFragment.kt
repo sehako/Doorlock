@@ -23,17 +23,23 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.doorlock.MyApi
 import com.example.doorlock.UserAddActivity
+import com.example.doorlock.UserInfo
 import com.example.doorlock.UserListAdapter
 import com.example.doorlock.Users
 import com.example.doorlock.databinding.FragmentHomeBinding
 import retrofit2.Call
 import retrofit2.Response
 import java.io.File
+import kotlin.concurrent.thread
 
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -84,7 +90,7 @@ class HomeFragment : Fragment() {
         })
         return root
     }
-    private fun getImageFromFile(userList: ArrayList<Users>) {
+    private fun getImageFromFiles(userList: ArrayList<Users>) {
         userList.clear()
         val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock").path
         val file = File(imageDirectory)
@@ -111,20 +117,35 @@ class HomeFragment : Fragment() {
 
     private fun deleteImage(userName: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MyApi().deleteRequest(userName).enqueue(object : Callback<String>, retrofit2.Callback<String> {
-                override fun onAnswer(p0: String, p1: Int) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun onError(p0: DnsResolver.DnsException) {
-                    TODO("Not yet implemented")
-                }
-
+            MyApi().deleteRequest(userName).enqueue(object : retrofit2.Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
                     Log.e("uploadChat()", "성공 : $response")
                 }
 
                 override fun onFailure(call: Call<String>, t: Throwable) {
+                    Log.e("uploadChat()", "에러 : " + t.message)
+                }
+            })
+        }
+    }
+
+    private fun userInfo() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MyApi().getInfo().enqueue(object : retrofit2.Callback<UserInfo> {
+                override fun onResponse(call: Call<UserInfo>, response: Response<UserInfo>) {
+                    if (response.isSuccessful) {
+                        val data = response.body()
+                        if (data != null) {
+                            // 처리할 로직
+                        } else {
+                            Log.e("userInfo()", "서버 응답이 null입니다.")
+                        }
+                    } else {
+                        Log.e("userInfo()", "서버 응답이 실패했습니다. 코드: ${response.code()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<UserInfo>, t: Throwable) {
                     Log.e("uploadChat()", "에러 : " + t.message)
                 }
             })

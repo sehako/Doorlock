@@ -21,9 +21,8 @@ import retrofit2.http.Query
 
 interface MyApi {
 
-    @Multipart
-    @GET("download.php")
-    fun downloadRequest(@PartMap file: MultipartBody.Part): Call<String>
+    @GET("getInfo.php")
+    fun getInfo(): Call<UserInfo>
 
     @Multipart
     @POST("upload.php")
