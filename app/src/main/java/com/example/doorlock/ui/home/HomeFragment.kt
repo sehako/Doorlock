@@ -55,6 +55,8 @@ class HomeFragment : Fragment() {
         val userAdapter = UserListAdapter(requireContext(), homeViewModel.userList)
         val linearManager = LinearLayoutManager(requireContext())
 
+        userInfo()
+
         fab.setOnClickListener {
             if(checkForInternet(requireContext())) {
                 val intent = Intent(requireContext(), UserAddActivity::class.java)
@@ -90,19 +92,6 @@ class HomeFragment : Fragment() {
         })
         return root
     }
-    private fun getImageFromFiles(userList: ArrayList<Users>) {
-        userList.clear()
-        val imageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/doorlock").path
-        val file = File(imageDirectory)
-        val files = file.listFiles()
-        if(files != null) {
-            for(onefile in files) {
-                val fileUri = onefile.toURI().toString()
-                val fileName = onefile.name.replace(".png", "")
-                userList.add(Users(fileName, fileUri))
-            }
-        }
-    }
     private fun checkForInternet(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -131,13 +120,18 @@ class HomeFragment : Fragment() {
 
     private fun userInfo() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            MyApi().getInfo().enqueue(object : retrofit2.Callback<UserInfo> {
-                override fun onResponse(call: Call<UserInfo>, response: Response<UserInfo>) {
+            MyApi().getInfo().enqueue(object : retrofit2.Callback<List<UserInfo>> {
+                override fun onResponse(call: Call<List<UserInfo>>, response: Response<List<UserInfo>>) {
                     if (response.isSuccessful) {
                         val data = response.body()
                         if (data != null) {
-                            // 처리할 로직
-                        } else {
+                            for (fileData in data) {
+                                val fileName = fileData.name
+                                val filePath = fileData.path
+                                Log.d("userInfo()", "$fileName, $filePath")
+                            }
+                        }
+                        else {
                             Log.e("userInfo()", "서버 응답이 null입니다.")
                         }
                     } else {
@@ -145,8 +139,8 @@ class HomeFragment : Fragment() {
                     }
                 }
 
-                override fun onFailure(call: Call<UserInfo>, t: Throwable) {
-                    Log.e("uploadChat()", "에러 : " + t.message)
+                override fun onFailure(call: Call<List<UserInfo>>, t: Throwable) {
+                    Log.e("userInfo()", "에러 : " + t.message)
                 }
             })
         }

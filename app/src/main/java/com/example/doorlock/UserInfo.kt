@@ -1,3 +1,3 @@
 package com.example.doorlock
 
-data class UserInfo(val success: Boolean, val name: String, val path: String)
+data class UserInfo(val name: String, val path: String)
