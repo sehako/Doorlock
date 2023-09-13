@@ -1,6 +1,8 @@
 package com.example.doorlock
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 
 class UserListAdapter(private val context: Context, private val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
     private var listener : OnItemClickListener? = null
@@ -30,7 +33,7 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
         private val img = itemView.findViewById<ImageView>(R.id.img_photo)
         fun bind (userList: Users, context: Context) {
             if (userList.img != "") {
-                img.setImageURI(userList.img.toUri())
+                Glide.with(itemView).load(userList.img).into(img)
             } else {
                 img?.setImageResource(R.mipmap.ic_launcher)
             }
