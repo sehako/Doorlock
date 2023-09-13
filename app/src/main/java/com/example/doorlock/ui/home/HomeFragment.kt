@@ -3,6 +3,7 @@ package com.example.doorlock.ui.home
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.net.DnsResolver
 import android.net.DnsResolver.Callback
@@ -30,6 +31,10 @@ import com.example.doorlock.databinding.FragmentHomeBinding
 import retrofit2.Call
 import retrofit2.Response
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlin.concurrent.thread
 
 
@@ -37,8 +42,11 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    var userList = arrayListOf<Users>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        userInfo()
     }
 
     override fun onCreateView(
@@ -52,10 +60,8 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
         val fab: View = binding.fab
         val users: RecyclerView = binding.rvProfile
-        val userAdapter = UserListAdapter(requireContext(), homeViewModel.userList)
+        val userAdapter = UserListAdapter(requireContext(), userList)
         val linearManager = LinearLayoutManager(requireContext())
-
-        userInfo()
 
         fab.setOnClickListener {
             if(checkForInternet(requireContext())) {
@@ -128,7 +134,10 @@ class HomeFragment : Fragment() {
                             for (fileData in data) {
                                 val fileName = fileData.name
                                 val filePath = fileData.path
-                                Log.d("userInfo()", "$fileName, $filePath")
+                                val imageUrl = "http://52.79.155.171//$filePath"
+                                Log.d("imageUrl", imageUrl)
+
+                                userList.add(Users(fileName, imageUrl))
                             }
                         }
                         else {
