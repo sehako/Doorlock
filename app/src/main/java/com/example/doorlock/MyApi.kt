@@ -34,7 +34,7 @@ interface MyApi {
     ): Call<String>
 
     companion object {
-        private const val BASE_URL = "http://52.79.155.171//"
+        private const val BASE_URL = "http://52.79.155.171/"
         private val gson = GsonBuilder().setLenient().create()
         operator fun invoke(): MyApi {
             return Retrofit.Builder()

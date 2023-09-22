@@ -1,19 +1,15 @@
 package com.example.doorlock
 
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
-class UserListAdapter(private val context: Context, private val userList: ArrayList<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
+class UserListAdapter(private val context: Context, private var userList: List<Users>) : RecyclerView.Adapter<UserListAdapter.Holder>() {
     private var listener : OnItemClickListener? = null
     private var longClickListener : OnItemLongClickListener? = null
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
@@ -65,5 +61,11 @@ class UserListAdapter(private val context: Context, private val userList: ArrayL
     }
     fun setOnLongItemClickListener(longClickListener: OnItemLongClickListener) {
         this.longClickListener = longClickListener
+    }
+
+    // 사용자 데이터를 업데이트하는 메서드
+    fun updateUserList(newList: List<Users>) {
+        userList = newList
+        notifyDataSetChanged() // RecyclerView 업데이트
     }
 }
