@@ -11,6 +11,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -33,6 +34,7 @@ import retrofit2.Response
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.InterruptedIOException
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -41,13 +43,7 @@ import kotlin.concurrent.thread
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-
-    var userList = arrayListOf<Users>()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        userInfo()
-    }
+    val userList = mutableListOf<Users>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,8 +56,17 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
         val fab: View = binding.fab
         val users: RecyclerView = binding.rvProfile
-        val userAdapter = UserListAdapter(requireContext(), userList)
+        val userAdapter = UserListAdapter(requireContext(), emptyList())
         val linearManager = LinearLayoutManager(requireContext())
+        users.adapter = userAdapter
+        users.layoutManager = linearManager
+
+        // 뷰모델의 LiveData를 관찰하고 데이터가 변경될 때 RecyclerView를 업데이트
+        homeViewModel.getUserListLiveData().observe(requireActivity(), { userList ->
+            userAdapter.updateUserList(userList)
+        })
+        // 사용자 데이터를 업데이트하여 RecyclerView가 자동으로 업데이트되도록 함
+        homeViewModel.updateUserList(userList)
 
         fab.setOnClickListener {
             if(checkForInternet(requireContext())) {
@@ -72,8 +77,6 @@ class HomeFragment : Fragment() {
                 Toast.makeText(requireContext(), "인터넷이 연결되어 있지 않습니다!", Toast.LENGTH_LONG).show()
             }
         }
-        users.adapter = userAdapter
-        users.layoutManager = linearManager
 
         userAdapter.setOnLongItemClickListener(object : UserListAdapter.OnItemLongClickListener {
             override fun onItemLongClick(v: View, data: Users, pos: Int) {
@@ -83,7 +86,7 @@ class HomeFragment : Fragment() {
                     builder.setPositiveButton("확인") { _, _ ->
                         deleteImage(userName = data.name)
                         userAdapter.notifyItemRemoved(pos)
-                        homeViewModel.userList.removeAt(pos)
+                        userList.removeAt(pos)
                     }
                     builder.setNegativeButton("취소") { dialog, _ ->
                         dialog.cancel()
@@ -96,6 +99,20 @@ class HomeFragment : Fragment() {
                 }
             }
         })
+        val db = Thread(Runnable {
+            run {
+                while(true) {
+                    try {
+                        userInfo()
+                        Thread.sleep(2000)
+                    }
+                    catch (e: InterruptedIOException) {
+                        e.message
+                    }
+                }
+            }
+        })
+        db.start()
         return root
     }
     private fun checkForInternet(context: Context): Boolean {
@@ -114,7 +131,7 @@ class HomeFragment : Fragment() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MyApi().deleteRequest(userName).enqueue(object : retrofit2.Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
-                    Log.e("uploadChat()", "성공 : $response")
+                    Log.e("uploadChat()", "성공 : ${response.body()}")
                 }
 
                 override fun onFailure(call: Call<String>, t: Throwable) {
@@ -125,12 +142,15 @@ class HomeFragment : Fragment() {
     }
 
     private fun userInfo() {
+        val homeViewModel =
+            ViewModelProvider(this)[HomeViewModel::class.java]
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MyApi().getInfo().enqueue(object : retrofit2.Callback<List<UserInfo>> {
                 override fun onResponse(call: Call<List<UserInfo>>, response: Response<List<UserInfo>>) {
                     if (response.isSuccessful) {
                         val data = response.body()
                         if (data != null) {
+                            userList.clear()
                             for (fileData in data) {
                                 val fileName = fileData.name
                                 val filePath = fileData.path
@@ -138,6 +158,8 @@ class HomeFragment : Fragment() {
                                 Log.d("imageUrl", imageUrl)
 
                                 userList.add(Users(fileName, imageUrl))
+                                // 사용자 데이터를 업데이트하여 RecyclerView가 자동으로 업데이트되도록 함
+                                homeViewModel.updateUserList(userList)
                             }
                         }
                         else {
