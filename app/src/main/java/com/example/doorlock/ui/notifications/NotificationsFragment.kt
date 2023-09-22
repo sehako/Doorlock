@@ -22,7 +22,6 @@ class NotificationsFragment : Fragment() {
     private var _binding: FragmentNotificationsBinding? = null
     private val binding get() = _binding!!
 
-
     private lateinit var adapter: SearchResultsAdapter
 
     override fun onCreateView(
@@ -33,10 +32,8 @@ class NotificationsFragment : Fragment() {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-
         val recyclerView: RecyclerView = binding.log
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-
 
         adapter = SearchResultsAdapter(emptyList())
         recyclerView.adapter = adapter
@@ -44,23 +41,24 @@ class NotificationsFragment : Fragment() {
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (!query.isNullOrEmpty()) {
-
                     searchDatabaseViaPHP(query)
                 }
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-
                 return false
             }
         })
+
+        // 데이터베이스에서 모든 데이터를 가져와서 표시
+        fetchAllDataFromDatabase()
+
         return root
     }
 
     private fun searchDatabaseViaPHP(query: String) {
         val url = "http://52.79.155.171/search.php"
-
 
         val request = Request.Builder()
             .url("$url?query=$query")
@@ -69,7 +67,6 @@ class NotificationsFragment : Fragment() {
         val client = OkHttpClient()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-
                 requireActivity().runOnUiThread {
                     Toast.makeText(requireContext(), "네트워크 오류: $e", Toast.LENGTH_LONG).show()
                 }
@@ -78,17 +75,13 @@ class NotificationsFragment : Fragment() {
             override fun onResponse(call: Call, response: Response) {
                 val responseData = response.body?.string()
 
-
                 if (!responseData.isNullOrEmpty()) {
-
                     val newSearchResults = parseSearchResults(responseData)
-
 
                     requireActivity().runOnUiThread {
                         adapter.updateData(newSearchResults)
                     }
                 } else {
-
                     requireActivity().runOnUiThread {
                         Toast.makeText(requireContext(), "검색 결과가 없습니다.", Toast.LENGTH_LONG).show()
                     }
@@ -96,7 +89,6 @@ class NotificationsFragment : Fragment() {
             }
         })
     }
-
 
     private fun parseSearchResults(responseData: String): List<SearchResult> {
         val searchResults = mutableListOf<SearchResult>()
@@ -114,6 +106,40 @@ class NotificationsFragment : Fragment() {
             e.printStackTrace()
         }
         return searchResults
+    }
+
+    private fun fetchAllDataFromDatabase() {
+        // 데이터베이스에서 모든 데이터를 가져와서 표시
+        val url = "http://52.79.155.171/all_data.php"
+
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        val client = OkHttpClient()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                requireActivity().runOnUiThread {
+                    Toast.makeText(requireContext(), "네트워크 오류: $e", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseData = response.body?.string()
+
+                if (!responseData.isNullOrEmpty()) {
+                    val allData = parseSearchResults(responseData)
+
+                    requireActivity().runOnUiThread {
+                        adapter.updateData(allData)
+                    }
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "데이터를 가져올 수 없습니다.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        })
     }
 
     override fun onDestroyView() {
