@@ -29,7 +29,6 @@ class SearchResultsAdapter(private var results: List<SearchResult>) : RecyclerVi
         return results.size
     }
 
-
     fun updateData(newResults: List<SearchResult>) {
         results = newResults
         notifyDataSetChanged()
