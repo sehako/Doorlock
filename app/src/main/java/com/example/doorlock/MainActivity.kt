@@ -11,6 +11,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
@@ -19,8 +20,12 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.net.Socket
+import java.util.concurrent.Executor
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var biometricPrompt: BiometricPrompt
+    private lateinit var executor: Executor
+    private lateinit var promptInfo: BiometricPrompt.PromptInfo
     private val callback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             finish()
@@ -35,6 +40,5 @@ class MainActivity : AppCompatActivity() {
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         navView.setupWithNavController(navController)
-        this.onBackPressedDispatcher.addCallback(this, callback)
     }
 }

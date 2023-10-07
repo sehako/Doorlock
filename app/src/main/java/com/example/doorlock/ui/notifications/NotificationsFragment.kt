@@ -1,6 +1,7 @@
 package com.example.doorlock.ui.notifications
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.doorlock.MyApi
+import com.example.doorlock.Records
 
 import com.example.doorlock.databinding.FragmentNotificationsBinding
 import okhttp3.*
@@ -41,7 +44,8 @@ class NotificationsFragment : Fragment() {
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (!query.isNullOrEmpty()) {
-                    searchDatabaseViaPHP(query)
+//                    searchDatabaseViaPHP(query)
+                    getRecord(query)
                 }
                 return true
             }
@@ -52,91 +56,36 @@ class NotificationsFragment : Fragment() {
         })
 
         // 데이터베이스에서 모든 데이터를 가져와서 표시
-        fetchAllDataFromDatabase()
+//        fetchAllDataFromDatabase()
+        getRecord("null")
 
         return root
     }
 
-    private fun searchDatabaseViaPHP(query: String) {
-        val url = "http://52.79.155.171/search.php"
-
-        val request = Request.Builder()
-            .url("$url?query=$query")
-            .build()
-
-        val client = OkHttpClient()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
+    private fun getRecord(name: String)
+    {
+        MyApi().getLog(name).enqueue(object : retrofit2.Callback<List<Records>> {
+            override fun onResponse(
+                call: retrofit2.Call<List<Records>>,
+                response: retrofit2.Response<List<Records>>
+            ) {
+                val searchResults = mutableListOf<SearchResult>()
+                val records = response.body()
+                if(records != null)
+                {
+                    for(record in records)
+                    {
+                        searchResults.add(SearchResult(record.name, record.name))
+                    }
+                }
                 requireActivity().runOnUiThread {
-                    Toast.makeText(requireContext(), "네트워크 오류: $e", Toast.LENGTH_LONG).show()
+                    adapter.updateData(searchResults)
                 }
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                val responseData = response.body?.string()
-
-                if (!responseData.isNullOrEmpty()) {
-                    val newSearchResults = parseSearchResults(responseData)
-
-                    requireActivity().runOnUiThread {
-                        adapter.updateData(newSearchResults)
-                    }
-                } else {
-                    requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "검색 결과가 없습니다.", Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        })
-    }
-
-    private fun parseSearchResults(responseData: String): List<SearchResult> {
-        val searchResults = mutableListOf<SearchResult>()
-        try {
-            val jsonArray = JSONArray(responseData)
-            for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
-                val name = jsonObject.getString("name")
-                val date = jsonObject.getString("date")
-
-                val result = SearchResult(name, date)
-                searchResults.add(result)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return searchResults
-    }
-
-    private fun fetchAllDataFromDatabase() {
-        // 데이터베이스에서 모든 데이터를 가져와서 표시
-        val url = "http://52.79.155.171/all_data.php"
-
-        val request = Request.Builder()
-            .url(url)
-            .build()
-
-        val client = OkHttpClient()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
+            override fun onFailure(call: retrofit2.Call<List<Records>>, t: Throwable) {
                 requireActivity().runOnUiThread {
-                    Toast.makeText(requireContext(), "네트워크 오류: $e", Toast.LENGTH_LONG).show()
-                }
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val responseData = response.body?.string()
-
-                if (!responseData.isNullOrEmpty()) {
-                    val allData = parseSearchResults(responseData)
-
-                    requireActivity().runOnUiThread {
-                        adapter.updateData(allData)
-                    }
-                } else {
-                    requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "데이터를 가져올 수 없습니다.", Toast.LENGTH_LONG).show()
-                    }
+                    Toast.makeText(requireContext(), "네트워크 오류: $t", Toast.LENGTH_LONG).show()
                 }
             }
         })
