@@ -24,6 +24,11 @@ interface MyApi {
     @GET("DbInfo.php")
     fun getInfo(): Call<List<UserInfo>>
 
+    @GET("search2.php")
+    fun getLog(
+        @Query("query") name: String
+    ): Call<List<Records>>
+
     @Multipart
     @POST("upload.php")
     fun uploadRequest(@Part file: MultipartBody.Part): Call<String>

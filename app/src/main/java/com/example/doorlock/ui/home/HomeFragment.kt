@@ -156,7 +156,6 @@ class HomeFragment : Fragment() {
                                 val filePath = fileData.path
                                 val imageUrl = "http://52.79.155.171//$filePath"
                                 Log.d("imageUrl", imageUrl)
-
                                 userList.add(Users(fileName, imageUrl))
                                 // 사용자 데이터를 업데이트하여 RecyclerView가 자동으로 업데이트되도록 함
                                 homeViewModel.updateUserList(userList)
