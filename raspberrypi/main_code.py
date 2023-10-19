@@ -183,6 +183,7 @@ while True:
             wave_count=0
     	
         if (wave_count>=3):
+	    wave_count=0
             print("얼굴인식을 시작합니다")
             name_origin = "Capture Failed"
             name_compare=""
