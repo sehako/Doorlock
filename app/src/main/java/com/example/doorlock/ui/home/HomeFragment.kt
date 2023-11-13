@@ -29,13 +29,19 @@ import com.example.doorlock.UserInfo
 import com.example.doorlock.UserListAdapter
 import com.example.doorlock.Users
 import com.example.doorlock.databinding.FragmentHomeBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Response
+import java.io.BufferedWriter
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.InterruptedIOException
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
+import java.net.Socket
 import java.net.URL
 import kotlin.concurrent.thread
 
@@ -62,9 +68,10 @@ class HomeFragment : Fragment() {
         users.layoutManager = linearManager
 
         // 뷰모델의 LiveData를 관찰하고 데이터가 변경될 때 RecyclerView를 업데이트
-        homeViewModel.getUserListLiveData().observe(requireActivity(), { userList ->
+        homeViewModel.getUserListLiveData().observe(requireActivity()) { userList ->
             userAdapter.updateUserList(userList)
-        })
+        }
+
         // 사용자 데이터를 업데이트하여 RecyclerView가 자동으로 업데이트되도록 함
         homeViewModel.updateUserList(userList)
 
@@ -131,6 +138,9 @@ class HomeFragment : Fragment() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MyApi().deleteRequest(userName).enqueue(object : retrofit2.Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
+                    val host = "ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com"
+                    val port = 9000
+                    sendMessageToServer("file_download", host, port)
                     Log.e("uploadChat()", "성공 : ${response.body()}")
                 }
 
@@ -173,6 +183,30 @@ class HomeFragment : Fragment() {
                     Log.e("userInfo()", "에러 : " + t.message)
                 }
             })
+        }
+    }
+
+    fun sendMessageToServer(message: String, host: String, port: Int) {
+        GlobalScope.launch(Dispatchers.IO) {
+            var client: Socket? = null
+            try {
+                client = Socket(host, port)
+                val writer = BufferedWriter(OutputStreamWriter(client.getOutputStream()))
+
+                // 서버에 메시지 보내기
+                writer.write(message)
+                writer.newLine()
+                writer.flush()
+            } catch (e: IOException) {
+                Log.e("Socket", e.printStackTrace().toString())
+                e.printStackTrace()
+            } finally {
+                try {
+                    client?.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 }

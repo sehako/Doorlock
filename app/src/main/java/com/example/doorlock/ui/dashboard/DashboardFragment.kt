@@ -46,18 +46,18 @@ class DashboardFragment : Fragment() {
 
         unlockButton.setOnClickListener {
             // 지문 인식 성공 시 잠금 해제 신호 보냄
-            val HOST = "ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com"
-            val PORT = 9000
-            sendMessageToServer("3", HOST, PORT)
+            val host = "ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com"
+            val port = 9000
+            sendMessageToServer("motor_operate", host, port)
         }
         return root
     }
 
-    fun sendMessageToServer(message: String, HOST: String, PORT: Int) {
+    fun sendMessageToServer(message: String, host: String, port: Int) {
         GlobalScope.launch(Dispatchers.IO) {
             var client: Socket? = null
             try {
-                client = Socket(HOST, PORT)
+                client = Socket(host, port)
                 val writer = BufferedWriter(OutputStreamWriter(client.getOutputStream()))
 
                 // 서버에 메시지 보내기
@@ -65,6 +65,7 @@ class DashboardFragment : Fragment() {
                 writer.newLine()
                 writer.flush()
             } catch (e: IOException) {
+                Log.e("Socket", e.printStackTrace().toString())
                 e.printStackTrace()
             } finally {
                 try {
