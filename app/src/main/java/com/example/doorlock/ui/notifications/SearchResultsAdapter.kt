@@ -1,13 +1,18 @@
 package com.example.doorlock.ui.notifications
 
+import android.app.Activity
+import android.content.res.Configuration
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.ActivityNavigatorExtras
 import androidx.recyclerview.widget.RecyclerView
+import com.example.doorlock.MainActivity
 import com.example.doorlock.R
 
-class SearchResultsAdapter(private var results: List<SearchResult>) : RecyclerView.Adapter<SearchResultsAdapter.ViewHolder>() {
+class SearchResultsAdapter(private var results: List<Records>) : RecyclerView.Adapter<SearchResultsAdapter.ViewHolder>() {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textViewName: TextView = itemView.findViewById(R.id.textViewName)
@@ -29,7 +34,7 @@ class SearchResultsAdapter(private var results: List<SearchResult>) : RecyclerVi
         return results.size
     }
 
-    fun updateData(newResults: List<SearchResult>) {
+    fun updateData(newResults: List<Records>) {
         results = newResults
         notifyDataSetChanged()
     }

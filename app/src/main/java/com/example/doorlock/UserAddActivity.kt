@@ -1,10 +1,12 @@
 package com.example.doorlock
 
+import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -14,10 +16,14 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.animation.Animation
+import android.view.animation.RotateAnimation
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.doorlock.databinding.ActivityUserAddBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -37,6 +43,8 @@ import java.net.Socket
 
 
 class UserAddActivity : AppCompatActivity() {
+    private val CAMERA_PERMISSION_REQUEST = 101
+    private val GALLERY_PERMISSION_REQUEST = 102
     private lateinit var binding: ActivityUserAddBinding
     private var selectedImageUri: Uri? = null
     private lateinit var nameText : EditText
@@ -47,6 +55,8 @@ class UserAddActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityUserAddBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        requestCameraPermission()
+        requestGalleryPermission()
 
         val imgView = binding.faceImage
         nameText = binding.userName
@@ -72,11 +82,13 @@ class UserAddActivity : AppCompatActivity() {
                     contentResolver.openInputStream(image)?.use { inputStream ->
                         bitmap = BitmapFactory.decodeStream(inputStream)
                     }
-                    imgView.setImageBitmap(bitmap)
+                    imgView.setImageURI(selectedImageUri)
                     // Process the data
                     nameText.hint = "이름 입력"
                 }
             }
+
+
 
         imgView.setOnClickListener {
             val builder = AlertDialog.Builder(this@UserAddActivity)
@@ -100,6 +112,32 @@ class UserAddActivity : AppCompatActivity() {
             }
             val dialog = builder.create()
             dialog.show()
+        }
+    }
+
+//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        when (requestCode) {
+//            CAMERA_PERMISSION_REQUEST -> {
+//                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                }
+//            }
+//            GALLERY_PERMISSION_REQUEST -> {
+//                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                }
+//            }
+//        }
+//    }
+
+    private fun requestCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST)
+        }
+    }
+
+    private fun requestGalleryPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), GALLERY_PERMISSION_REQUEST)
         }
     }
 
@@ -161,9 +199,9 @@ class UserAddActivity : AppCompatActivity() {
                 if(cam) {
                     imageFile.delete()
                 }
-                val HOST = "ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com"
-                val PORT = 9000
-                sendMessageToServer("2", HOST, PORT)
+                val host = "ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com"
+                val port = 9000
+                sendMessageToServer("file_download", host, port)
                 finish()
             }
 
@@ -176,11 +214,11 @@ class UserAddActivity : AppCompatActivity() {
         })
     }
 
-    fun sendMessageToServer(message: String, HOST: String, PORT: Int) {
+    fun sendMessageToServer(message: String, host: String, port: Int) {
         GlobalScope.launch(Dispatchers.IO) {
             var client: Socket? = null
             try {
-                client = Socket(HOST, PORT)
+                client = Socket(host, port)
                 val writer = BufferedWriter(OutputStreamWriter(client.getOutputStream()))
 
                 // 서버에 메시지 보내기
