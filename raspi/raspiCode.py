@@ -24,12 +24,12 @@ import requests
 
 
 # DB 설정
-DB_HOST="http://52.79.155.171/DbLog.php"
+DB_HOST="DB_address"
 
 # 소켓 설정
 
-HOST='ec2-52-79-155-171.ap-northeast-2.compute.amazonaws.com'
-PORT=9000
+HOST='Server_address'
+PORT="port"
 '''
 HOST = '127.0.0.1'
 PORT = 9999
@@ -393,3 +393,4 @@ while True:
 
 
 #GPIO.cleanup()
+
